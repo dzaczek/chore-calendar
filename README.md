@@ -4,6 +4,8 @@ Printable monthly chore calendar for families. Assign tasks to days, drag & drop
 
 All data stays in your browser (localStorage). No account, no server-side storage.
 
+![Chore Family Planner](screenshot.png)
+
 ## Features
 
 - **Monthly calendar view** with daily, weekly, monthly, and quarterly task categories

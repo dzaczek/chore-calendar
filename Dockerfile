@@ -18,8 +18,9 @@ COPY --from=builder /install /usr/local
 WORKDIR /app
 COPY chore_calendar_app.py gunicorn.conf.py ./
 
-# Drop write permissions on app files
-RUN chmod -R a-w /app
+# Files: read-only for all. Directories: read+execute for traversal.
+RUN find /app -type f -exec chmod 444 {} + && \
+    find /app -type d -exec chmod 555 {} +
 
 # No .pyc files, unbuffered output
 ENV PYTHONDONTWRITEBYTECODE=1 \

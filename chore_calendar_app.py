@@ -44,6 +44,7 @@ DEFAULT_DATA = {
         "view_year": 2026,
         "view_month": 3,
         "category_colors": deepcopy(DEFAULT_CATEGORY_COLORS),
+        "custom_periods": [],
     },
     "tasks": [
         {
@@ -109,7 +110,7 @@ def normalize_task(task, index):
         "monthly": "monthly",
         "quarterly": "quarterly",
     }
-    period = legacy_map.get(raw_period, "weekly")
+    period = legacy_map.get(raw_period, raw_period if raw_period.startswith("every_") else "weekly")
     day = str(task.get("day") or "").strip()
     if period == "daily":
         day = ""
@@ -158,6 +159,7 @@ def normalize_data(raw_data):
             "category_colors": normalize_category_colors(
                 settings.get("category_colors") or settings.get("categoryColors")
             ),
+            "custom_periods": settings.get("custom_periods") if isinstance(settings.get("custom_periods"), list) else [],
         },
         "tasks": [normalize_task(task, index) for index, task in enumerate(tasks)],
     }
@@ -215,6 +217,7 @@ TEMPLATE = r"""
       --accent-strong: #385848;
       --chip: #edf4ec;
       --daily: #9fc9af;
+
       --weekly: #a8c8d8;
       --monthly: #d8b0d2;
       --quarterly: #c3d4a2;
@@ -686,6 +689,7 @@ TEMPLATE = r"""
     }
 
     .calendar-dot.daily { background: var(--daily); color: #1c3a25; }
+
     .calendar-dot.weekly { background: var(--weekly); color: #173747; }
     .calendar-dot.monthly { background: var(--monthly); color: #4c2448; }
     .calendar-dot.quarterly { background: var(--quarterly); color: #33441c; }
@@ -716,6 +720,7 @@ TEMPLATE = r"""
     }
 
     .legend-head.daily { background: color-mix(in srgb, var(--daily) 42%, white); }
+
     .legend-head.weekly { background: color-mix(in srgb, var(--weekly) 42%, white); }
     .legend-head.monthly { background: color-mix(in srgb, var(--monthly) 42%, white); }
     .legend-head.quarterly { background: color-mix(in srgb, var(--quarterly) 48%, white); }
@@ -746,6 +751,7 @@ TEMPLATE = r"""
     }
 
     .legend-color-button.daily { background: var(--daily); color: #1c3a25; }
+
     .legend-color-button.weekly { background: var(--weekly); color: #173747; }
     .legend-color-button.monthly { background: var(--monthly); color: #4c2448; }
     .legend-color-button.quarterly { background: var(--quarterly); color: #33441c; }
@@ -755,6 +761,7 @@ TEMPLATE = r"""
     }
 
     button.legend-color-button.daily:hover { background: var(--daily); }
+
     button.legend-color-button.weekly:hover { background: var(--weekly); }
     button.legend-color-button.monthly:hover { background: var(--monthly); }
     button.legend-color-button.quarterly:hover { background: var(--quarterly); }
@@ -801,6 +808,7 @@ TEMPLATE = r"""
     }
 
     .legend-icon.daily { background: var(--daily); color: #1c3a25; }
+
     .legend-icon.weekly { background: var(--weekly); color: #173747; }
     .legend-icon.monthly { background: var(--monthly); color: #4c2448; }
     .legend-icon.quarterly { background: var(--quarterly); color: #33441c; }
@@ -1488,12 +1496,31 @@ TEMPLATE = r"""
       return state.tasks.find(task => task.id === taskId);
     }
 
+    function customPeriods() {
+      return state.settings.custom_periods || [];
+    }
+
+    function allPeriods() {
+      return [...PERIODS, ...customPeriods().map(cp => cp.id)];
+    }
+
+    function findCustomPeriod(periodId) {
+      return customPeriods().find(cp => cp.id === periodId);
+    }
+
+    function isCustomPeriod(period) {
+      return period.startsWith("every_");
+    }
+
     function periodLabel(period) {
       if (period === "all") return "All Periods";
       if (period === "daily") return "Daily";
       if (period === "weekly") return "Weekly";
       if (period === "monthly") return "Monthly";
-      return "Every 3 Months";
+      if (period === "quarterly") return "Every 3 Months";
+      const cp = findCustomPeriod(period);
+      if (cp) return `Every ${cp.interval} Days`;
+      return period;
     }
 
     function tasksForPeriod(period) {
@@ -1502,13 +1529,52 @@ TEMPLATE = r"""
 
     function currentCategoryColor(period) {
       const customColors = state.settings.category_colors || {};
-      return customColors[period] || DEFAULT_CATEGORY_COLORS[period];
+      if (customColors[period]) return customColors[period];
+      if (DEFAULT_CATEGORY_COLORS[period]) return DEFAULT_CATEGORY_COLORS[period];
+      const cp = findCustomPeriod(period);
+      return cp ? cp.color : "#b8c8a8";
     }
 
     function applyCategoryColors() {
-      PERIODS.forEach(period => {
+      allPeriods().forEach(period => {
         document.documentElement.style.setProperty(`--${period}`, currentCategoryColor(period));
       });
+    }
+
+    function addCustomPeriod() {
+      const input = prompt("Every how many days? (2-30)");
+      if (!input) return;
+      const interval = Math.min(30, Math.max(2, parseInt(input, 10)));
+      if (!Number.isFinite(interval)) {
+        alert("Please enter a number between 2 and 30.");
+        return;
+      }
+      const existing = customPeriods().find(cp => cp.interval === interval);
+      if (existing) {
+        alert(`Category "Every ${interval} Days" already exists.`);
+        return;
+      }
+      const id = `every_${interval}`;
+      const colors = ["#c9d4a0", "#d4c9a0", "#a0c9d4", "#d4a0c9", "#a0d4b8", "#c4a0d4", "#d4b8a0"];
+      const color = colors[customPeriods().length % colors.length];
+      if (!state.settings.custom_periods) state.settings.custom_periods = [];
+      state.settings.custom_periods.push({ id, interval, color });
+      state.settings.category_colors = state.settings.category_colors || {};
+      state.settings.category_colors[id] = color;
+      saveAll(false, false);
+    }
+
+    function removeCustomPeriod(periodId) {
+      const cp = findCustomPeriod(periodId);
+      if (!cp) return;
+      const tasksInPeriod = tasksForPeriod(periodId);
+      if (tasksInPeriod.length > 0) {
+        if (!confirm(`This will delete ${tasksInPeriod.length} task(s) in "${periodLabel(periodId)}". Continue?`)) return;
+        state.tasks = state.tasks.filter(t => t.period !== periodId);
+      }
+      state.settings.custom_periods = customPeriods().filter(c => c.id !== periodId);
+      delete (state.settings.category_colors || {})[periodId];
+      saveAll(false, false);
     }
 
     function currentYear() {
@@ -1536,7 +1602,7 @@ TEMPLATE = r"""
     }
 
     function manualMonthDateForTask(task, dayLimit = null) {
-      if (!["monthly", "quarterly"].includes(task.period)) {
+      if (!["monthly", "quarterly"].includes(task.period) && !isCustomPeriod(task.period)) {
         return null;
       }
 
@@ -1551,6 +1617,13 @@ TEMPLATE = r"""
     function taskScheduleLabel(task) {
       if (task.period === "daily") {
         return "All month";
+      }
+
+      const cp = findCustomPeriod(task.period);
+      if (cp) {
+        const manualDate = manualMonthDateForTask(task, dayLimitForMonth(currentYear(), currentMonth()));
+        if (manualDate !== null) return `From day ${manualDate}`;
+        return `Every ${cp.interval} days`;
       }
 
       const manualDate = manualMonthDateForTask(task, dayLimitForMonth(currentYear(), currentMonth()));
@@ -1602,6 +1675,14 @@ TEMPLATE = r"""
         return cells.filter(Boolean).map(cell => cell.dateNumber);
       }
 
+      const cp = findCustomPeriod(task.period);
+      if (cp) {
+        const allDates = cells.filter(Boolean).map(cell => cell.dateNumber);
+        const manualStart = manualMonthDateForTask(task, Math.max(...allDates));
+        const start = manualStart !== null ? manualStart : 1;
+        return allDates.filter(d => d >= start && (d - start) % cp.interval === 0);
+      }
+
       const manualDate = manualMonthDateForTask(
         task,
         cells.reduce((max, cell) => cell ? Math.max(max, cell.dateNumber) : max, 0)
@@ -1638,8 +1719,9 @@ TEMPLATE = r"""
       document.getElementById("monthSelect").value = String(state.settings.view_month || 1);
 
       const taskPeriodInput = document.getElementById("taskPeriod");
-      const selectedTaskPeriod = PERIODS.includes(taskPeriodInput.value) ? taskPeriodInput.value : "daily";
-      taskPeriodInput.innerHTML = PERIODS
+      const all = allPeriods();
+      const selectedTaskPeriod = all.includes(taskPeriodInput.value) ? taskPeriodInput.value : "daily";
+      taskPeriodInput.innerHTML = all
         .map(period => `<option value="${period}">${periodLabel(period)}</option>`)
         .join("");
       taskPeriodInput.value = selectedTaskPeriod;
@@ -1665,9 +1747,21 @@ TEMPLATE = r"""
       document.getElementById("monthChip").textContent = `${MONTHS[month - 1]} ${year}`;
     }
 
+    function periodStyle(period) {
+      const color = currentCategoryColor(period);
+      if (isCustomPeriod(period)) {
+        return `background:${color};color:#2a3a1c;`;
+      }
+      return "";
+    }
+
     function calendarDot(task) {
       const dot = document.createElement("div");
       dot.className = `calendar-dot ${task.period}`;
+      if (isCustomPeriod(task.period)) {
+        dot.style.background = currentCategoryColor(task.period);
+        dot.style.color = "#2a3a1c";
+      }
       dot.dataset.taskId = task.id;
       dot.title = task.title;
       dot.textContent = (task.icon || defaultIcon(task.title)).slice(0, 3);
@@ -1681,8 +1775,9 @@ TEMPLATE = r"""
         entry.classList.add("is-draggable");
       }
       entry.dataset.taskId = task.id;
+      const iconStyle = periodStyle(task.period);
       entry.innerHTML = `
-        <div class="legend-icon ${task.period}">${escapeHtml((task.icon || defaultIcon(task.title)).slice(0, 3))}</div>
+        <div class="legend-icon ${task.period}" ${iconStyle ? `style="${iconStyle}"` : ""}>${escapeHtml((task.icon || defaultIcon(task.title)).slice(0, 3))}</div>
         <div class="legend-copy">
           <div class="legend-top">
             <div class="legend-title">${escapeHtml(task.title)}</div>
@@ -1697,17 +1792,21 @@ TEMPLATE = r"""
       return entry;
     }
 
-    function periodSection(period) {
+    function periodSection(period, isCustom) {
       const color = currentCategoryColor(period);
       const visibleTasks = tasksForPeriod(period);
+      const deleteBtn = isCustom
+        ? `<button class="secondary legend-color-button" type="button" onclick="removeCustomPeriod('${period}')" title="Delete category" style="background:#e8a0a0;color:#4a1c1c;">x</button>`
+        : "";
       return `
         <section class="legend-group">
-          <div class="legend-head ${period}">
+          <div class="legend-head" style="background: color-mix(in srgb, ${color} 42%, white);">
             <span class="legend-head-title">${periodLabel(period)}</span>
             <span class="legend-head-actions">
-              <button class="secondary legend-color-button ${period}" type="button" onclick="openCategoryColorPicker('${period}')" title="Change ${periodLabel(period)} color">✎</button>
+              <button class="secondary legend-color-button" type="button" onclick="openCategoryColorPicker('${period}')" title="Change color" style="background:${color};">✎</button>
               <input id="categoryColor-${period}" class="legend-color-input" type="color" value="${color}" onchange="updateCategoryColor('${period}', this.value)">
-              <button class="secondary legend-color-button ${period}" type="button" onclick="addTaskForPeriod('${period}')" title="Add ${periodLabel(period)} task">+</button>
+              <button class="secondary legend-color-button" type="button" onclick="addTaskForPeriod('${period}')" title="Add task" style="background:${color};">+</button>
+              ${deleteBtn}
             </span>
           </div>
           <div class="legend-list" data-period-list="${period}">
@@ -1719,10 +1818,14 @@ TEMPLATE = r"""
 
     function renderTaskList() {
       const list = document.getElementById("masterTaskList");
-      list.innerHTML = PERIODS.map(period => periodSection(period)).join("");
+      const builtIn = PERIODS.map(period => periodSection(period, false)).join("");
+      const custom = customPeriods().map(cp => periodSection(cp.id, true)).join("");
+      const addBtn = '<button class="secondary" type="button" onclick="addCustomPeriod()" style="width:100%;padding:6px;font-size:11px;border-radius:4px;margin-top:4px;">+ Add Every N Days Category</button>';
+      list.innerHTML = builtIn + custom + addBtn;
 
-      PERIODS.forEach(period => {
+      allPeriods().forEach(period => {
         const target = list.querySelector(`[data-period-list="${period}"]`);
+        if (!target) return;
         tasksForPeriod(period).forEach(task => {
           target.appendChild(legendItem(task));
         });
@@ -1744,7 +1847,7 @@ TEMPLATE = r"""
 
     function renderPeriodSwitcher() {
       const switcher = document.getElementById("periodSwitcher");
-      switcher.innerHTML = ["all", ...PERIODS].map(period => `
+      switcher.innerHTML = ["all", ...allPeriods()].map(period => `
         <button class="period-pill ${period === activePeriod ? "active" : ""}" onclick="setActivePeriod('${period}')">
           ${periodLabel(period)}
         </button>
@@ -1817,6 +1920,8 @@ TEMPLATE = r"""
             if (task.period === "weekly") {
               task.day = event.to.dataset.day;
               delete task.month_date;
+            } else if (isCustomPeriod(task.period)) {
+              task.month_date = parseMonthDate(event.to.dataset.date);
             } else {
               task.day = event.to.dataset.day;
               task.month_date = parseMonthDate(event.to.dataset.date);
@@ -1831,8 +1936,8 @@ TEMPLATE = r"""
 
     function toggleDayField() {
       const frequency = document.getElementById("taskPeriod").value;
-      const dayWrap = document.getElementById("taskDayWrap");
-      dayWrap.style.display = frequency === "daily" ? "none" : "block";
+      const isCustom = isCustomPeriod(frequency);
+      document.getElementById("taskDayWrap").style.display = (frequency === "daily" || isCustom) ? "none" : "block";
     }
 
     function updateTaskModalState() {
@@ -1968,7 +2073,8 @@ TEMPLATE = r"""
       const title = document.getElementById("taskTitle").value.trim();
       const iconInput = document.getElementById("taskIcon").value.trim();
       const period = document.getElementById("taskPeriod").value;
-      const day = period === "daily" ? "" : document.getElementById("taskDay").value;
+      const isCustom = isCustomPeriod(period);
+      const day = (period === "daily" || isCustom) ? "" : document.getElementById("taskDay").value;
 
       if (!title) {
         alert("Please enter a task name.");
@@ -1987,7 +2093,7 @@ TEMPLATE = r"""
         existingTask.icon = (iconInput || defaultIcon(title)).slice(0, 4);
         existingTask.period = period;
         existingTask.day = day;
-        if (period === "daily" || period === "weekly") {
+        if (period === "daily" || period === "weekly" || isCustom) {
           delete existingTask.month_date;
         } else {
           const manualDate = parseMonthDate(existingTask.month_date);

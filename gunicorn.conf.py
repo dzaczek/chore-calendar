@@ -16,3 +16,13 @@ accesslog = "-"
 errorlog = "-"
 loglevel = "warning"
 preload_app = True
+
+# --- Cloudflare Tunnel / Reverse Proxy ---
+# Uncomment these when running behind Cloudflare Tunnel or any reverse proxy.
+# They allow gunicorn to trust X-Forwarded-* headers for correct client IP
+# and HTTPS detection.
+
+# forwarded_allow_ips = "*"          # Trust proxy headers from any source (safe behind CF tunnel in internal network)
+# secure_scheme_headers = {"X-Forwarded-Proto": "https"}  # Detect HTTPS from CF header
+# proxy_protocol = False             # CF tunnel uses HTTP, not PROXY protocol
+# proxy_allow_from = "*"             # Allow proxy connections from any internal IP

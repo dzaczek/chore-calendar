@@ -3,8 +3,8 @@ services:
     build: .
     container_name: chore-planner
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
 
     # --- Read-only filesystem ---
     read_only: true
@@ -16,7 +16,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    # No capabilities needed - pure HTTP server
 
     # --- Resource limits ---
     deploy:
@@ -30,7 +29,7 @@ services:
 
     # --- Network ---
     networks:
-      - frontend
+      - internal
 
     # --- Logging ---
     logging:
@@ -47,6 +46,46 @@ services:
       retries: 3
       start_period: 10s
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: chore-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    env_file:
+      - .env
+
+    # --- Security hardening ---
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+    # --- Resource limits ---
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+
+    # --- Network ---
+    networks:
+      - internal
+
+    depends_on:
+      chore-planner:
+        condition: service_healthy
+
+    # --- Logging ---
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
 networks:
-  frontend:
+  internal:
     driver: bridge
+    internal: true
