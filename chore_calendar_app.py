@@ -966,7 +966,7 @@ TEMPLATE = r"""
         overflow: hidden;
       }
 
-      .eyebrow, .period-switcher, .task-actions, .sheet-note {
+      .eyebrow, .period-switcher, .task-actions, .sheet-note, footer {
         display: none !important;
       }
 
@@ -1318,6 +1318,9 @@ TEMPLATE = r"""
         </div>
       </div>
     </main>
+    <footer style="text-align:center;padding:8px;font-size:11px;color:#999;letter-spacing:0.02em;">
+      <a href="https://github.com/dzaczek/chore-calendar" target="_blank" rel="noopener" style="color:#999;text-decoration:none;">dzaczek &copy; 2026 &middot; github.com/dzaczek/chore-calendar</a>
+    </footer>
   </div>
 
   <div class="settings-modal" id="settingsModal" hidden onclick="closeSettingsModalOnBackdrop(event)">
