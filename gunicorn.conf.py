@@ -12,8 +12,9 @@ graceful_timeout = 10
 limit_request_line = 8190
 limit_request_fields = 50
 limit_request_field_size = 8190
-accesslog = "-"
+accesslog = "/var/log/gunicorn/access.log"
 errorlog = "-"
+access_log_format = '%(h)s - %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 loglevel = "warning"
 preload_app = True
 

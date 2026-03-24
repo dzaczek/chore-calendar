@@ -10,6 +10,8 @@ services:
     read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=10m
+    volumes:
+      - access-logs:/var/log/gunicorn
 
     # --- Security hardening ---
     security_opt:
@@ -45,6 +47,41 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
+
+  goaccess:
+    image: allinurl/goaccess:latest
+    container_name: chore-goaccess
+    restart: unless-stopped
+    command: >
+      --log-file=/logs/access.log
+      --log-format='%h - %t "%r" %s %b "%R" "%u"'
+      --date-format=%d/%b/%Y
+      --time-format=%H:%M:%S
+      --output=/report/index.html
+      --real-time-html
+      --ws-url=ws://localhost:7890
+      --port=7890
+      --addr=0.0.0.0
+      --no-ip-validation
+    ports:
+      - "7890:7890"
+    volumes:
+      - access-logs:/logs:ro
+      - goaccess-report:/report
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -85,6 +122,10 @@ services:
       options:
         max-size: "5m"
         max-file: "3"
+
+volumes:
+  access-logs:
+  goaccess-report:
 
 networks:
   internal:
