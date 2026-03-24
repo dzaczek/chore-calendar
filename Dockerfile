@@ -22,6 +22,9 @@ COPY chore_calendar_app.py gunicorn.conf.py ./
 RUN find /app -type f -exec chmod 444 {} + && \
     find /app -type d -exec chmod 555 {} +
 
+# Log directory writable by appuser
+RUN mkdir -p /var/log/gunicorn && chown appuser:appuser /var/log/gunicorn
+
 # No .pyc files, unbuffered output
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
