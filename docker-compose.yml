@@ -58,6 +58,7 @@ services:
       - "--output=/report/index.html"
       - "--real-time-html"
       - "--ws-url=ws://localhost:7890"
+      - "--html-report-title=Chore Planner Stats"
       - "--port=7890"
       - "--addr=0.0.0.0"
       - "--no-ip-validation"
@@ -78,6 +79,41 @@ services:
         limits:
           cpus: "0.25"
           memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  goaccess-web:
+    image: nginx:alpine
+    container_name: chore-goaccess-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7891:80"
+    volumes:
+      - goaccess-report:/usr/share/nginx/html:ro
+    networks:
+      - external
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=10m
+      - /var/run:size=1m
+      - /tmp:size=1m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 32M
     logging:
       driver: json-file
       options:
