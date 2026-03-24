@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
     command: >
       --log-file=/logs/access.log
-      --log-format='%h - %t "%r" %s %b "%R" "%u"'
+      --log-format=%h - [%d:%t %^] "%r" %s %b "%R" "%u"
       --date-format=%d/%b/%Y
       --time-format=%H:%M:%S
       --output=/report/index.html
