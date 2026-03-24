@@ -73,6 +73,7 @@ services:
     # --- Network ---
     networks:
       - internal
+      - external
 
     depends_on:
       chore-planner:
@@ -89,3 +90,5 @@ networks:
   internal:
     driver: bridge
     internal: true
+  external:
+    driver: bridge
