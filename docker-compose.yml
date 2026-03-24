@@ -68,6 +68,8 @@ services:
     volumes:
       - access-logs:/logs:ro
       - goaccess-report:/report
+    networks:
+      - internal
     security_opt:
       - no-new-privileges:true
     cap_drop:
