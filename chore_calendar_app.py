@@ -1379,12 +1379,15 @@ TEMPLATE = r"""
           </svg>
           <span>Share</span>
         </button>
-        <button type="button" class="rail-button secondary" onclick="resetData()" title="Reset">
+        <button type="button" class="rail-button secondary" onclick="wipeData()" title="Wipe all data">
           <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 1 0 3-6.7" />
-            <path d="M3 4v5h5" />
+            <path d="M3 6h18" />
+            <path d="M8 6V4h8v2" />
+            <path d="M5 6v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
           </svg>
-          <span>Reset</span>
+          <span>Wipe</span>
         </button>
         <button type="button" class="rail-button secondary" onclick="openBackupModal()" title="Backup">
           <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2499,9 +2502,21 @@ TEMPLATE = r"""
       return true;
     }
 
-    function resetData() {
-      if (!confirm("Reset to the demo planner?")) return;
-      state = JSON.parse(JSON.stringify(serverDefaults));
+    function wipeData() {
+      if (!confirm("This will delete ALL tasks and settings. Are you sure?")) return;
+      const today = new Date();
+      state = {
+        settings: {
+          title: "Chore Planner",
+          people: [],
+          view_year: today.getFullYear(),
+          view_month: today.getMonth() + 1,
+          category_colors: JSON.parse(JSON.stringify(DEFAULT_CATEGORY_COLORS)),
+          custom_periods: [],
+          week_start: "sunday"
+        },
+        tasks: []
+      };
       saveToLocalStorage(state);
       closeSettingsModal();
       closeTaskModal();
