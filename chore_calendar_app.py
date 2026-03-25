@@ -2621,29 +2621,25 @@ TEMPLATE = r"""
 
     function exportPdf() {
       const board = document.querySelector(".print-sheet");
+      const page = document.querySelector(".page");
+      const panel = document.querySelector(".panel");
       const title = state.settings.title || "Chore Planner";
       const month = MONTHS[(currentMonth() || 1) - 1];
       const year = currentYear();
       const filename = `${title} - ${month} ${year}.pdf`;
 
-      const clone = board.cloneNode(true);
-      clone.style.cssText = "width:1120px;padding:12px;background:white;position:absolute;left:-9999px;top:0;";
-      const layout = clone.querySelector(".layout");
-      if (layout) {
-        layout.style.cssText = "display:flex;gap:8px;width:100%;";
-      }
-      const stack = clone.querySelector(".stack");
-      if (stack) stack.style.cssText = "flex:1;min-width:0;";
-      const legend = clone.querySelector(".legend-surface");
-      if (legend) legend.style.cssText = "width:200px;flex-shrink:0;padding:6px;background:rgba(247,250,244,0.86);";
-      const intro = clone.querySelector(".board-intro");
-      if (intro) intro.style.display = "none";
-      const switcher = clone.querySelector(".period-switcher");
-      if (switcher) switcher.style.display = "none";
-      clone.querySelectorAll(".legend-actions").forEach(el => el.style.display = "none");
-      clone.querySelectorAll(".legend-head-actions").forEach(el => el.style.display = "none");
-      clone.querySelectorAll(".help-button").forEach(el => el.style.display = "none");
-      document.body.appendChild(clone);
+      const saved = {
+        page: page.style.cssText,
+        board: document.querySelector(".board").style.cssText,
+        sheet: board.style.cssText
+      };
+      panel.style.display = "none";
+      page.style.cssText = "display:block;max-width:none;margin:0;padding:0;";
+      document.querySelector(".board").style.cssText = "border:0;box-shadow:none;padding:8px;background:white;min-height:0;overflow:visible;border-radius:0;";
+      board.style.cssText = "width:1120px;background:white;padding:8px;";
+      const hideEls = board.querySelectorAll(".board-intro, .period-switcher, .legend-actions, .legend-head-actions, .help-button, .eyebrow");
+      hideEls.forEach(el => el.dataset.pdfHidden = el.style.display || "");
+      hideEls.forEach(el => el.style.display = "none");
 
       const opt = {
         margin: [2, 2, 2, 2],
@@ -2654,16 +2650,21 @@ TEMPLATE = r"""
           useCORS: true,
           logging: false,
           scrollX: 0,
-          scrollY: 0,
-          width: 1120,
-          windowWidth: 1120
+          scrollY: -window.scrollY
         },
         jsPDF: {unit: "mm", format: "a4", orientation: "landscape"}
       };
-      html2pdf().set(opt).from(clone).save().then(function() {
-        clone.remove();
-      }).catch(function(err) {
-        clone.remove();
+
+      function restore() {
+        panel.style.display = "";
+        page.style.cssText = saved.page;
+        document.querySelector(".board").style.cssText = saved.board;
+        board.style.cssText = saved.sheet;
+        hideEls.forEach(el => { el.style.display = el.dataset.pdfHidden || ""; delete el.dataset.pdfHidden; });
+      }
+
+      html2pdf().set(opt).from(board).save().then(restore).catch(function(err) {
+        restore();
         alert("PDF generation failed: " + err.message);
       });
     }
