@@ -2676,7 +2676,44 @@ TEMPLATE = r"""
         hideEls.forEach(el => { el.style.display = el.dataset.pdfHidden || ""; delete el.dataset.pdfHidden; });
       }
 
-      html2pdf().set(opt).from(board).save().then(restore).catch(function(err) {
+      html2pdf().set(opt).from(board).toPdf().get("pdf").then(function(pdf) {
+        restore();
+        try {
+          const link = generateShareLink();
+          if (link.length <= 2950) {
+            const qr = qrcode(0, "L");
+            qr.addData(link);
+            qr.make();
+            const count = qr.getModuleCount();
+            const cellSize = 3;
+            const size = count * cellSize;
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            pdf.addPage("a4", "landscape");
+
+            const canvas = document.createElement("canvas");
+            canvas.width = count;
+            canvas.height = count;
+            const ctx = canvas.getContext("2d");
+            for (let row = 0; row < count; row++) {
+              for (let col = 0; col < count; col++) {
+                ctx.fillStyle = qr.isDark(row, col) ? "#000" : "#fff";
+                ctx.fillRect(col, row, 1, 1);
+              }
+            }
+            const imgData = canvas.toDataURL("image/png");
+            const qrX = (pageW - size) / 2;
+            pdf.setFontSize(16);
+            pdf.text("Scan to load this calendar", pageW / 2, 15, {align: "center"});
+            pdf.addImage(imgData, "PNG", qrX, 22, size, size);
+            pdf.setFontSize(10);
+            pdf.setTextColor(100);
+            pdf.text("Scan this QR code with your phone to open the calendar", pageW / 2, 22 + size + 8, {align: "center"});
+            pdf.text("with all current tasks and settings.", pageW / 2, 22 + size + 14, {align: "center"});
+          }
+        } catch (e) { /* QR generation failed, skip page */ }
+        pdf.save(filename);
+      }).catch(function(err) {
         restore();
         alert("PDF generation failed: " + err.message);
       });
