@@ -1293,6 +1293,14 @@ TEMPLATE = r"""
           </svg>
           <span>Reset</span>
         </button>
+        <button type="button" class="rail-button secondary" onclick="openBackupModal()" title="Backup">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 4h11l3 3v13H5z" />
+            <path d="M8 4v6h8V4" />
+            <path d="M8 20v-6h8v6" />
+          </svg>
+          <span>Backup</span>
+        </button>
         <button type="button" class="rail-button" onclick="openTaskModal()" title="Add task">
           <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 5v14" />
@@ -1422,6 +1430,38 @@ TEMPLATE = r"""
           <button type="button" class="secondary" onclick="closeTaskModal()">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="task-modal" id="backupModal" hidden onclick="closeBackupModalOnBackdrop(event)">
+    <div class="task-modal-card" role="dialog" aria-modal="true" aria-labelledby="backupModalHeading">
+      <div class="task-modal-head">
+        <div class="section-copy">
+          <div class="eyebrow">Backup</div>
+          <h3 class="task-modal-title" id="backupModalHeading">Backup &amp; Restore</h3>
+          <p class="surface-note">Download your calendar data as a file or restore from a previous backup.</p>
+        </div>
+        <button type="button" class="secondary task-modal-close" onclick="closeBackupModal()">Close</button>
+      </div>
+      <div style="margin-top:16px;display:grid;gap:12px;">
+        <button type="button" class="action-button" onclick="downloadBackup()" style="width:100%;padding:14px;font-size:14px;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 4h11l3 3v13H5z" />
+            <path d="M8 4v6h8V4" />
+            <path d="M8 20v-6h8v6" />
+          </svg>
+          <span>Download Backup</span>
+        </button>
+        <button type="button" class="secondary action-button" onclick="triggerRestore()" style="width:100%;padding:14px;font-size:14px;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Restore Backup</span>
+        </button>
+        <input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="restoreBackup(event)">
+      </div>
     </div>
   </div>
 
@@ -2035,7 +2075,7 @@ TEMPLATE = r"""
     }
 
     function syncModalBodyState() {
-      const hasOpenModal = ["taskModal", "settingsModal"].some(id => {
+      const hasOpenModal = ["taskModal", "settingsModal", "backupModal"].some(id => {
         const modal = document.getElementById(id);
         return modal && !modal.hidden;
       });
@@ -2250,6 +2290,63 @@ TEMPLATE = r"""
       });
     }
 
+    function openBackupModal() {
+      closeSettingsModal();
+      closeTaskModal();
+      document.getElementById("backupModal").hidden = false;
+      syncModalBodyState();
+    }
+
+    function closeBackupModal() {
+      document.getElementById("backupModal").hidden = true;
+      syncModalBodyState();
+    }
+
+    function closeBackupModalOnBackdrop(event) {
+      if (event.target.id === "backupModal") closeBackupModal();
+    }
+
+    function downloadBackup() {
+      const json = JSON.stringify(state, null, 2);
+      const blob = new Blob([json], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const now = new Date();
+      const stamp = now.toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `chore-planner-backup-${stamp}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function triggerRestore() {
+      document.getElementById("restoreFileInput").value = "";
+      document.getElementById("restoreFileInput").click();
+    }
+
+    function restoreBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!parsed.settings || !parsed.tasks) {
+            alert("Invalid backup file.");
+            return;
+          }
+          if (!confirm("This will replace your current calendar data. Continue?")) return;
+          state = parsed;
+          saveToLocalStorage(state);
+          closeBackupModal();
+          render();
+        } catch (err) {
+          alert("Could not read backup file: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
     function openPrintView() {
       saveToLocalStorage(state);
       const params = new URLSearchParams({
@@ -2268,7 +2365,9 @@ TEMPLATE = r"""
 
     render();
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape" && !document.getElementById("settingsModal").hidden) {
+      if (event.key === "Escape" && !document.getElementById("backupModal").hidden) {
+        closeBackupModal();
+      } else if (event.key === "Escape" && !document.getElementById("settingsModal").hidden) {
         closeSettingsModal();
       } else if (event.key === "Escape" && !document.getElementById("taskModal").hidden) {
         closeTaskModal();
