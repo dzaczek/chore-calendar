@@ -45,6 +45,7 @@ DEFAULT_DATA = {
         "view_month": 3,
         "category_colors": deepcopy(DEFAULT_CATEGORY_COLORS),
         "custom_periods": [],
+        "week_start": "sunday",
     },
     "tasks": [
         {
@@ -173,6 +174,7 @@ def normalize_data(raw_data):
                 settings.get("category_colors") or settings.get("categoryColors")
             ),
             "custom_periods": settings.get("custom_periods") if isinstance(settings.get("custom_periods"), list) else [],
+            "week_start": settings.get("week_start") if settings.get("week_start") in ("sunday", "monday") else "sunday",
         },
         "tasks": [normalize_task(task, index) for index, task in enumerate(tasks)],
     }
@@ -1474,6 +1476,14 @@ TEMPLATE = r"""
           </div>
         </div>
 
+        <div class="field">
+          <label for="weekStartSelect">Week starts on</label>
+          <select id="weekStartSelect">
+            <option value="sunday">Sunday</option>
+            <option value="monday">Monday</option>
+          </select>
+        </div>
+
         <div class="button-row settings-actions">
           <button type="submit" class="settings-save action-button">
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1838,10 +1848,20 @@ TEMPLATE = r"""
       return task.day;
     }
 
+    function weekStartOffset() {
+      return state.settings.week_start === "monday" ? 1 : 0;
+    }
+
+    function orderedDays() {
+      const offset = weekStartOffset();
+      return [...DAYS.slice(offset), ...DAYS.slice(0, offset)];
+    }
+
     function monthMatrix(year, month) {
       const firstDay = new Date(year, month - 1, 1);
       const daysInMonth = new Date(year, month, 0).getDate();
-      const lead = firstDay.getDay();
+      const offset = weekStartOffset();
+      const lead = (firstDay.getDay() - offset + 7) % 7;
       const total = Math.ceil((lead + daysInMonth) / 7) * 7;
       const cells = [];
 
@@ -1933,6 +1953,8 @@ TEMPLATE = r"""
         .map((month, index) => `<option value="${index + 1}">${month}</option>`)
         .join("");
       document.getElementById("monthSelect").value = String(state.settings.view_month || 1);
+
+      document.getElementById("weekStartSelect").value = state.settings.week_start || "sunday";
 
       const taskPeriodInput = document.getElementById("taskPeriod");
       const all = allPeriods();
@@ -2249,6 +2271,8 @@ TEMPLATE = r"""
 
       const yearValue = Number.parseInt(document.getElementById("yearInput").value, 10);
       state.settings.view_year = Number.isFinite(yearValue) ? Math.min(2100, Math.max(2000, yearValue)) : currentYear();
+
+      state.settings.week_start = document.getElementById("weekStartSelect").value || "sunday";
     }
 
     function openSettingsModal() {
