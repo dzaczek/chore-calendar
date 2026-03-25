@@ -2625,22 +2625,45 @@ TEMPLATE = r"""
       const month = MONTHS[(currentMonth() || 1) - 1];
       const year = currentYear();
       const filename = `${title} - ${month} ${year}.pdf`;
+
+      const clone = board.cloneNode(true);
+      clone.style.cssText = "width:1120px;padding:12px;background:white;position:absolute;left:-9999px;top:0;";
+      const layout = clone.querySelector(".layout");
+      if (layout) {
+        layout.style.cssText = "display:flex;gap:8px;width:100%;";
+      }
+      const stack = clone.querySelector(".stack");
+      if (stack) stack.style.cssText = "flex:1;min-width:0;";
+      const legend = clone.querySelector(".legend-surface");
+      if (legend) legend.style.cssText = "width:200px;flex-shrink:0;padding:6px;background:rgba(247,250,244,0.86);";
+      const intro = clone.querySelector(".board-intro");
+      if (intro) intro.style.display = "none";
+      const switcher = clone.querySelector(".period-switcher");
+      if (switcher) switcher.style.display = "none";
+      clone.querySelectorAll(".legend-actions").forEach(el => el.style.display = "none");
+      clone.querySelectorAll(".legend-head-actions").forEach(el => el.style.display = "none");
+      clone.querySelectorAll(".help-button").forEach(el => el.style.display = "none");
+      document.body.appendChild(clone);
+
       const opt = {
-        margin: [3, 3, 3, 3],
+        margin: [2, 2, 2, 2],
         filename: filename,
-        image: {type: "jpeg", quality: 0.92},
+        image: {type: "jpeg", quality: 0.95},
         html2canvas: {
-          scale: 1.5,
+          scale: 2,
           useCORS: true,
           logging: false,
           scrollX: 0,
           scrollY: 0,
-          windowWidth: board.scrollWidth,
-          windowHeight: board.scrollHeight
+          width: 1120,
+          windowWidth: 1120
         },
         jsPDF: {unit: "mm", format: "a4", orientation: "landscape"}
       };
-      html2pdf().set(opt).from(board).save().catch(function(err) {
+      html2pdf().set(opt).from(clone).save().then(function() {
+        clone.remove();
+      }).catch(function(err) {
+        clone.remove();
         alert("PDF generation failed: " + err.message);
       });
     }
