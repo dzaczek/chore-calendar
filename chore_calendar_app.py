@@ -221,6 +221,7 @@ TEMPLATE = r"""
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --bg: #eef1ea;
@@ -1360,6 +1361,15 @@ TEMPLATE = r"""
             <path d="M17 11h.01" />
           </svg>
           <span>Print</span>
+        </button>
+        <button type="button" class="rail-button secondary" onclick="exportPdf()" title="Save as PDF">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+            <path d="M5 3h9l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+            <path d="M9 17h6" />
+            <path d="M9 13h6" />
+          </svg>
+          <span>PDF</span>
         </button>
         <button type="button" class="rail-button secondary" onclick="shareLink()" title="Share link">
           <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2601,6 +2611,22 @@ TEMPLATE = r"""
         }
       };
       reader.readAsText(file);
+    }
+
+    function exportPdf() {
+      const board = document.querySelector(".print-sheet");
+      const title = state.settings.title || "Chore Planner";
+      const month = MONTHS[(currentMonth() || 1) - 1];
+      const year = currentYear();
+      const filename = `${title} - ${month} ${year}.pdf`;
+      const opt = {
+        margin: 3,
+        filename: filename,
+        image: {type: "jpeg", quality: 0.95},
+        html2canvas: {scale: 2, useCORS: true},
+        jsPDF: {unit: "mm", format: "a4", orientation: "landscape"}
+      };
+      html2pdf().set(opt).from(board).save();
     }
 
     function openPrintView() {
