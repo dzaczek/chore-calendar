@@ -1413,7 +1413,7 @@ TEMPLATE = r"""
           </div>
           <div class="board-meta">
             <div class="meta-chip" id="statsChip">0 tasks</div>
-            <div class="meta-chip" id="periodChip">Daily</div>
+
             <div class="meta-chip" id="monthChip">March 2026</div>
             <button class="meta-chip help-button" onclick="openHelpModal()" title="How to use" style="cursor:pointer;border:1px solid var(--line);background:#fff;font-weight:900;font-size:13px;padding:4px 10px;">?</button>
           </div>
@@ -1993,7 +1993,7 @@ TEMPLATE = r"""
       const year = currentYear();
       document.getElementById("boardTitle").textContent = state.settings.title || "Chore Planner";
       document.getElementById("statsChip").textContent = `${state.tasks.length} task${state.tasks.length === 1 ? "" : "s"}`;
-      document.getElementById("periodChip").textContent = periodLabel(activePeriod);
+
       document.getElementById("monthChip").textContent = `${MONTHS[month - 1]} ${year}`;
     }
 
