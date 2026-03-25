@@ -218,6 +218,7 @@ TEMPLATE = r"""
   <title>Chore Planner</title>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <style>
     :root {
       --bg: #eef1ea;
@@ -926,6 +927,10 @@ TEMPLATE = r"""
       line-height: 1.45;
     }
 
+    .qr-page {
+      display: none;
+    }
+
     .print-line {
       margin-top: 10px;
       display: grid;
@@ -1195,6 +1200,52 @@ TEMPLATE = r"""
         display: none !important;
       }
 
+      .qr-page {
+        display: block;
+        page-break-before: always;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        padding-top: 15%;
+      }
+
+      .qr-content {
+        display: inline-block;
+      }
+
+      .qr-title {
+        font-size: 18pt;
+        margin: 0 0 12mm 0;
+        color: #333;
+      }
+
+      #qrCodeContainer {
+        display: inline-block;
+        padding: 5mm;
+        border: 1px solid #ccc;
+        border-radius: 4mm;
+        background: white;
+      }
+
+      #qrCodeContainer img, #qrCodeContainer canvas {
+        display: block;
+      }
+
+      .qr-desc {
+        max-width: 300px;
+        margin: 8mm auto 0;
+        font-size: 10pt;
+        line-height: 1.5;
+        color: #666;
+      }
+
+      .qr-error {
+        max-width: 300px;
+        margin: 8mm auto 0;
+        font-size: 10pt;
+        color: #c33;
+      }
+
       @page {
         size: A4 landscape;
         margin: 3mm;
@@ -1373,6 +1424,14 @@ TEMPLATE = r"""
         </div>
       </div>
     </main>
+    <div class="qr-page" id="qrPage">
+      <div class="qr-content">
+        <h2 class="qr-title">Scan to load this calendar</h2>
+        <div id="qrCodeContainer"></div>
+        <p class="qr-desc">Scan this QR code with your phone to open the calendar with all current tasks and settings. The data is encoded in the URL.</p>
+        <p class="qr-error" id="qrError" style="display:none;">Calendar data is too large for a QR code. Use the Share link or Backup file instead.</p>
+      </div>
+    </div>
     <footer style="text-align:center;padding:8px;font-size:11px;color:#999;letter-spacing:0.02em;">
       <a href="https://github.com/dzaczek/chore-calendar" target="_blank" rel="noopener" style="color:#999;text-decoration:none;">dzaczek &copy; 2026 &middot; github.com/dzaczek/chore-calendar</a>
     </footer>
@@ -2550,12 +2609,34 @@ TEMPLATE = r"""
       }
     });
 
+    function generateQrCode() {
+      const container = document.getElementById("qrCodeContainer");
+      const errorEl = document.getElementById("qrError");
+      if (!container) return;
+      const link = generateShareLink();
+      if (link.length > 2950) {
+        container.style.display = "none";
+        errorEl.style.display = "block";
+        return;
+      }
+      try {
+        const qr = qrcode(0, "L");
+        qr.addData(link);
+        qr.make();
+        container.innerHTML = qr.createSvgTag(6, 0);
+      } catch (e) {
+        container.style.display = "none";
+        errorEl.style.display = "block";
+      }
+    }
+
     if (document.body.classList.contains("print-mode")) {
       const requestedPeriod = new URLSearchParams(window.location.search).get("period");
       if (requestedPeriod && ["all", ...PERIODS].includes(requestedPeriod)) {
         activePeriod = requestedPeriod;
         render();
       }
+      generateQrCode();
       window.setTimeout(() => window.print(), 250);
     }
   </script>
