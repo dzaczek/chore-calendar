@@ -1450,7 +1450,7 @@ TEMPLATE = r"""
         <p class="qr-error" id="qrError" style="display:none;">Calendar data is too large for a QR code. Use the Share link or Backup file instead.</p>
       </div>
     </div>
-    <footer style="text-align:center;padding:8px;font-size:11px;color:#999;letter-spacing:0.02em;">
+    <footer style="grid-column:1/-1;text-align:center;padding:8px;font-size:11px;color:#999;letter-spacing:0.02em;">
       <a href="https://github.com/dzaczek/chore-calendar" target="_blank" rel="noopener" style="color:#999;text-decoration:none;">dzaczek &copy; 2026 &middot; github.com/dzaczek/chore-calendar</a>
     </footer>
   </div>
