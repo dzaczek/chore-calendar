@@ -2625,15 +2625,25 @@ TEMPLATE = r"""
       const year = currentYear();
       const filename = `${title} - ${month} ${year}.pdf`;
 
+      const boardEl = document.querySelector(".board");
+      const layoutEl = board.querySelector(".layout");
+      const stackEl = board.querySelector(".stack");
+      const legendEl = board.querySelector(".legend-surface");
       const saved = {
         page: page.style.cssText,
-        board: document.querySelector(".board").style.cssText,
-        sheet: board.style.cssText
+        board: boardEl.style.cssText,
+        sheet: board.style.cssText,
+        layout: layoutEl ? layoutEl.style.cssText : "",
+        stack: stackEl ? stackEl.style.cssText : "",
+        legend: legendEl ? legendEl.style.cssText : ""
       };
       panel.style.display = "none";
       page.style.cssText = "display:block;max-width:none;margin:0;padding:0;";
-      document.querySelector(".board").style.cssText = "border:0;box-shadow:none;padding:8px;background:white;min-height:0;overflow:visible;border-radius:0;";
+      boardEl.style.cssText = "border:0;box-shadow:none;padding:8px;background:white;min-height:0;overflow:visible;border-radius:0;";
       board.style.cssText = "width:1080px;background:white;padding:8px;";
+      if (layoutEl) layoutEl.style.cssText = "display:grid;grid-template-columns:minmax(0,1fr) minmax(0,240px);gap:12px;";
+      if (stackEl) stackEl.style.cssText = "display:flex;flex-direction:column;gap:12px;min-width:0;";
+      if (legendEl) legendEl.style.cssText = "padding:8px;background:rgba(247,250,244,0.86);";
       const hideEls = board.querySelectorAll(".board-intro, .period-switcher, .legend-actions, .legend-head-actions, .help-button, .eyebrow");
       hideEls.forEach(el => el.dataset.pdfHidden = el.style.display || "");
       hideEls.forEach(el => el.style.display = "none");
@@ -2655,8 +2665,11 @@ TEMPLATE = r"""
       function restore() {
         panel.style.display = "";
         page.style.cssText = saved.page;
-        document.querySelector(".board").style.cssText = saved.board;
+        boardEl.style.cssText = saved.board;
         board.style.cssText = saved.sheet;
+        if (layoutEl) layoutEl.style.cssText = saved.layout;
+        if (stackEl) stackEl.style.cssText = saved.stack;
+        if (legendEl) legendEl.style.cssText = saved.legend;
         hideEls.forEach(el => { el.style.display = el.dataset.pdfHidden || ""; delete el.dataset.pdfHidden; });
       }
 
