@@ -2644,6 +2644,8 @@ TEMPLATE = r"""
       if (layoutEl) layoutEl.style.cssText = "display:grid;grid-template-columns:minmax(0,1fr) minmax(0,240px);gap:12px;";
       if (stackEl) stackEl.style.cssText = "display:flex;flex-direction:column;gap:12px;min-width:0;";
       if (legendEl) legendEl.style.cssText = "padding:8px;background:rgba(247,250,244,0.86);";
+      const boardHead = board.querySelector(".board-head");
+      if (boardHead) { saved.boardHead = boardHead.style.cssText; boardHead.style.cssText = "display:flex;justify-content:space-between;align-items:end;gap:16px;flex-direction:row;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(101,113,102,0.2);"; }
       const hideEls = board.querySelectorAll(".board-intro, .period-switcher, .legend-actions, .legend-head-actions, .help-button, .eyebrow");
       hideEls.forEach(el => el.dataset.pdfHidden = el.style.display || "");
       hideEls.forEach(el => el.style.display = "none");
@@ -2670,6 +2672,7 @@ TEMPLATE = r"""
         if (layoutEl) layoutEl.style.cssText = saved.layout;
         if (stackEl) stackEl.style.cssText = saved.stack;
         if (legendEl) legendEl.style.cssText = saved.legend;
+        if (boardHead) boardHead.style.cssText = saved.boardHead || "";
         hideEls.forEach(el => { el.style.display = el.dataset.pdfHidden || ""; delete el.dataset.pdfHidden; });
       }
 
