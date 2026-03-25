@@ -869,6 +869,34 @@ TEMPLATE = r"""
       cursor: pointer;
     }
 
+    .help-tooltip {
+      position: absolute;
+      z-index: 900;
+      width: 220px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.97);
+      border: 1px solid rgba(136,108,72,0.2);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      font-size: 12px;
+      line-height: 1.5;
+      color: #333;
+      pointer-events: auto;
+    }
+
+    .help-tooltip::before {
+      content: "";
+      position: absolute;
+      top: -6px;
+      right: 14px;
+      width: 10px;
+      height: 10px;
+      background: rgba(255,255,255,0.97);
+      border-top: 1px solid rgba(136,108,72,0.2);
+      border-left: 1px solid rgba(136,108,72,0.2);
+      transform: rotate(45deg);
+    }
+
     .task-actions {
       margin-top: 8px;
       display: flex;
@@ -979,7 +1007,7 @@ TEMPLATE = r"""
         overflow: hidden;
       }
 
-      .eyebrow, .period-switcher, .task-actions, .sheet-note, footer, .help-button {
+      .eyebrow, .period-switcher, .task-actions, .sheet-note, footer, .help-button, .board-intro {
         display: none !important;
       }
 
@@ -1325,6 +1353,11 @@ TEMPLATE = r"""
             <button class="meta-chip help-button" onclick="openHelpModal()" title="How to use" style="cursor:pointer;border:1px solid var(--line);background:#fff;font-weight:900;font-size:13px;padding:4px 10px;">?</button>
           </div>
         </div>
+
+        <p class="board-intro" style="margin:0 0 8px;padding:8px 12px;background:rgba(245,238,228,0.7);border-radius:8px;font-size:11px;line-height:1.5;color:#666;">
+          Add tasks to categories, drag them onto calendar days. Your data lives <strong>only in this browser</strong> &mdash; use
+          <strong>Share</strong> to transfer via link or <strong>Backup</strong> to save a file. Click <strong style="font-size:13px;">?</strong> for full guide.
+        </p>
 
         <div class="layout">
           <div class="stack">
@@ -1934,7 +1967,7 @@ TEMPLATE = r"""
           <div class="legend-head" style="background: color-mix(in srgb, ${color} 42%, white);">
             <span class="legend-head-title">${periodLabel(period)}</span>
             <span class="legend-head-actions">
-              <button class="secondary legend-color-button" type="button" onclick="alert('${helpText}')" title="${helpText}" style="background:#fff;color:#666;font-size:10px;font-weight:900;">?</button>
+              <button class="secondary legend-color-button" type="button" onclick="toggleHelpTooltip(event, '${period}')" title="${helpText}" style="background:#fff;color:#666;font-size:10px;font-weight:900;">?</button>
               <button class="secondary legend-color-button" type="button" onclick="openCategoryColorPicker('${period}')" title="Change color" style="background:${color};">✎</button>
               <input id="categoryColor-${period}" class="legend-color-input" type="color" value="${color}" onchange="updateCategoryColor('${period}', this.value)">
               <button class="secondary legend-color-button" type="button" onclick="addTaskForPeriod('${period}')" title="Add task" style="background:${color};">+</button>
@@ -2347,6 +2380,31 @@ TEMPLATE = r"""
       }).catch(() => {
         prompt("Copy this link:", link);
       });
+    }
+
+    let activeTooltip = null;
+
+    function toggleHelpTooltip(event, period) {
+      event.stopPropagation();
+      closeHelpTooltip();
+      const btn = event.currentTarget;
+      const text = periodHelpText(period);
+      const tip = document.createElement("div");
+      tip.className = "help-tooltip";
+      tip.textContent = text;
+      document.body.appendChild(tip);
+      const rect = btn.getBoundingClientRect();
+      tip.style.top = (rect.bottom + 8 + window.scrollY) + "px";
+      tip.style.left = Math.max(8, rect.right - tip.offsetWidth + 10 + window.scrollX) + "px";
+      activeTooltip = tip;
+      setTimeout(() => document.addEventListener("click", closeHelpTooltip, {once: true}), 10);
+    }
+
+    function closeHelpTooltip() {
+      if (activeTooltip) {
+        activeTooltip.remove();
+        activeTooltip = null;
+      }
     }
 
     function openHelpModal() {
