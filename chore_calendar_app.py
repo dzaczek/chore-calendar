@@ -1204,9 +1204,9 @@ TEMPLATE = r"""
         display: block;
         page-break-before: always;
         width: 100%;
-        height: 100%;
         text-align: center;
-        padding-top: 10mm;
+        padding-top: 5mm;
+        overflow: hidden;
       }
 
       .qr-content {
@@ -1214,35 +1214,39 @@ TEMPLATE = r"""
       }
 
       .qr-title {
-        font-size: 18pt;
-        margin: 0 0 12mm 0;
+        font-size: 14pt;
+        margin: 0 0 4mm 0;
         color: #333;
       }
 
       #qrCodeContainer {
         display: inline-block;
-        padding: 5mm;
+        padding: 3mm;
         border: 1px solid #ccc;
-        border-radius: 4mm;
+        border-radius: 3mm;
         background: white;
       }
 
-      #qrCodeContainer img, #qrCodeContainer canvas {
+      #qrCodeContainer svg {
         display: block;
+        max-width: 120mm;
+        max-height: 120mm;
+        width: auto;
+        height: auto;
       }
 
       .qr-desc {
         max-width: 300px;
-        margin: 8mm auto 0;
-        font-size: 10pt;
-        line-height: 1.5;
+        margin: 4mm auto 0;
+        font-size: 9pt;
+        line-height: 1.4;
         color: #666;
       }
 
       .qr-error {
         max-width: 300px;
-        margin: 8mm auto 0;
-        font-size: 10pt;
+        margin: 4mm auto 0;
+        font-size: 9pt;
         color: #c33;
       }
 
@@ -2623,7 +2627,7 @@ TEMPLATE = r"""
         const qr = qrcode(0, "L");
         qr.addData(link);
         qr.make();
-        container.innerHTML = qr.createSvgTag(6, 0);
+        container.innerHTML = qr.createSvgTag(4, 0);
       } catch (e) {
         container.style.display = "none";
         errorEl.style.display = "block";
