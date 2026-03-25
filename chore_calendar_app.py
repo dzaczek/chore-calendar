@@ -1343,10 +1343,6 @@ TEMPLATE = r"""
 <body class="{{ 'print-mode' if print_mode else 'screen-mode' }}">
   <div class="page">
     <aside class="panel">
-      <div class="eyebrow">Menu</div>
-      <h1 class="panel-title">Chore Planner</h1>
-      <p class="subtle">No inputs stay here. Settings and tasks open from popup menus behind the icons.</p>
-
       <div class="action-rail">
         <button type="button" class="rail-button secondary" onclick="openSettingsModal()" title="Settings">
           <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
