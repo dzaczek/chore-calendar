@@ -1460,11 +1460,6 @@ TEMPLATE = r"""
           <input id="titleInput" type="text" placeholder="Chore Planner">
         </div>
 
-        <div class="field">
-          <label for="peopleInput">People shown in header</label>
-          <input id="peopleInput" type="text" placeholder="Jacek, Alex, Mia">
-        </div>
-
         <div class="row">
           <div class="field">
             <label for="monthSelect">Month</label>
