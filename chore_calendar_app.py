@@ -2616,13 +2616,23 @@ TEMPLATE = r"""
       const year = currentYear();
       const filename = `${title} - ${month} ${year}.pdf`;
       const opt = {
-        margin: 3,
+        margin: [3, 3, 3, 3],
         filename: filename,
-        image: {type: "jpeg", quality: 0.95},
-        html2canvas: {scale: 2, useCORS: true},
+        image: {type: "jpeg", quality: 0.92},
+        html2canvas: {
+          scale: 1.5,
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: board.scrollWidth,
+          windowHeight: board.scrollHeight
+        },
         jsPDF: {unit: "mm", format: "a4", orientation: "landscape"}
       };
-      html2pdf().set(opt).from(board).save();
+      html2pdf().set(opt).from(board).save().catch(function(err) {
+        alert("PDF generation failed: " + err.message);
+      });
     }
 
     function openPrintView() {
