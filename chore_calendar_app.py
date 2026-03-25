@@ -2685,8 +2685,8 @@ TEMPLATE = r"""
             qr.addData(link);
             qr.make();
             const count = qr.getModuleCount();
-            const cellSize = 3;
-            const size = count * cellSize;
+            const maxSize = 100;
+            const size = Math.min(maxSize, count * 3);
             const pageW = pdf.internal.pageSize.getWidth();
             const pageH = pdf.internal.pageSize.getHeight();
             pdf.addPage("a4", "landscape");
