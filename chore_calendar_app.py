@@ -17,10 +17,10 @@ def security_headers(response):
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Content-Security-Policy"] = (
         "default-src 'none'; "
-        "script-src 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "script-src 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
         "style-src 'unsafe-inline'; "
         "connect-src 'self'; "
-        "img-src 'self' data:; "
+        "img-src 'self' data: blob:; "
         "form-action 'self'; "
         "base-uri 'self'; "
         "frame-ancestors 'none'"
