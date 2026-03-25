@@ -808,6 +808,10 @@ TEMPLATE = r"""
       gap: 3px;
     }
 
+    .legend-list:empty {
+      padding: 0;
+    }
+
     .legend-item {
       display: grid;
       grid-template-columns: 20px 1fr;
@@ -2083,7 +2087,6 @@ TEMPLATE = r"""
             </span>
           </div>
           <div class="legend-list" data-period-list="${period}">
-            ${visibleTasks.length ? "" : '<div class="empty">No tasks.</div>'}
           </div>
         </section>
       `;
