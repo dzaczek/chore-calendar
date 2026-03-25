@@ -2445,26 +2445,45 @@ TEMPLATE = r"""
       return null;
     }
 
-    function migrateCustomPlacements(oldYear, oldMonth, newYear, newMonth) {
+    function migrateTasksToNewMonth(oldYear, oldMonth, newYear, newMonth) {
       if (oldYear === newYear && oldMonth === newMonth) return;
       state.tasks.forEach(task => {
-        if (task.period !== "custom" || !task.placements) return;
-        const oldPlacements = task.placements.filter(p => p.year === oldYear && p.month === oldMonth);
-        if (oldPlacements.length === 0) return;
-        const hasNew = task.placements.some(p => p.year === newYear && p.month === newMonth);
-        if (hasNew) return;
-        oldPlacements.forEach(p => {
-          const oldDate = new Date(oldYear, oldMonth - 1, p.date);
+        // Migrate custom placements
+        if (task.period === "custom" && task.placements) {
+          const oldPlacements = task.placements.filter(p => p.year === oldYear && p.month === oldMonth);
+          if (oldPlacements.length > 0) {
+            const hasNew = task.placements.some(p => p.year === newYear && p.month === newMonth);
+            if (!hasNew) {
+              oldPlacements.forEach(p => {
+                const oldDate = new Date(oldYear, oldMonth - 1, p.date);
+                const weekday = oldDate.getDay();
+                let nth = 0;
+                for (let d = 1; d <= p.date; d++) {
+                  if (new Date(oldYear, oldMonth - 1, d).getDay() === weekday) nth++;
+                }
+                const newDate = nthWeekdayInMonth(newYear, newMonth, weekday, nth);
+                if (newDate && !task.placements.some(pp => pp.year === newYear && pp.month === newMonth && pp.date === newDate)) {
+                  task.placements.push({year: newYear, month: newMonth, date: newDate});
+                }
+              });
+            }
+          }
+          return;
+        }
+
+        // Migrate month_date for monthly and every_N tasks
+        if (task.month_date && (task.period === "monthly" || isCustomPeriod(task.period))) {
+          const dayLimit = dayLimitForMonth(oldYear, oldMonth);
+          const oldDay = Math.min(task.month_date, dayLimit);
+          const oldDate = new Date(oldYear, oldMonth - 1, oldDay);
           const weekday = oldDate.getDay();
           let nth = 0;
-          for (let d = 1; d <= p.date; d++) {
+          for (let d = 1; d <= oldDay; d++) {
             if (new Date(oldYear, oldMonth - 1, d).getDay() === weekday) nth++;
           }
           const newDate = nthWeekdayInMonth(newYear, newMonth, weekday, nth);
-          if (newDate && !task.placements.some(pp => pp.year === newYear && pp.month === newMonth && pp.date === newDate)) {
-            task.placements.push({year: newYear, month: newMonth, date: newDate});
-          }
-        });
+          if (newDate) task.month_date = newDate;
+        }
       });
     }
 
@@ -2475,7 +2494,7 @@ TEMPLATE = r"""
       applySettingsFormToState();
       const newYear = currentYear();
       const newMonth = currentMonth();
-      migrateCustomPlacements(oldYear, oldMonth, newYear, newMonth);
+      migrateTasksToNewMonth(oldYear, oldMonth, newYear, newMonth);
       const saved = await saveAll(true, false);
       if (saved === false) {
         return;
