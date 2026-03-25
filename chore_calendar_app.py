@@ -737,11 +737,11 @@ TEMPLATE = r"""
       gap: 8px;
     }
 
-    .legend-head.daily { background: color-mix(in srgb, var(--daily) 42%, white); }
+    .legend-head.daily { background: #d5e8dc; }
 
-    .legend-head.weekly { background: color-mix(in srgb, var(--weekly) 42%, white); }
-    .legend-head.monthly { background: color-mix(in srgb, var(--monthly) 42%, white); }
-    .legend-head.custom { background: color-mix(in srgb, var(--custom) 48%, white); }
+    .legend-head.weekly { background: #d9e7ef; }
+    .legend-head.monthly { background: #efdceb; }
+    .legend-head.custom { background: #dfe7d5; }
 
     .legend-head-title {
       min-width: 0;
@@ -1696,6 +1696,16 @@ TEMPLATE = r"""
         .replaceAll("'", "&#039;");
     }
 
+    function mixColorWithWhite(hex, ratio) {
+      const r = parseInt(hex.slice(1,3), 16);
+      const g = parseInt(hex.slice(3,5), 16);
+      const b = parseInt(hex.slice(5,7), 16);
+      const mr = Math.round(r * ratio + 255 * (1 - ratio));
+      const mg = Math.round(g * ratio + 255 * (1 - ratio));
+      const mb = Math.round(b * ratio + 255 * (1 - ratio));
+      return `#${mr.toString(16).padStart(2,"0")}${mg.toString(16).padStart(2,"0")}${mb.toString(16).padStart(2,"0")}`;
+    }
+
     function defaultIcon(title) {
       const parts = String(title || "").trim().split(/\s+/).filter(Boolean);
       const icon = parts.slice(0, 2).map(part => part[0]).join("").toUpperCase();
@@ -2054,7 +2064,7 @@ TEMPLATE = r"""
       const helpText = periodHelpText(period);
       return `
         <section class="legend-group">
-          <div class="legend-head" style="background: color-mix(in srgb, ${color} 42%, white);">
+          <div class="legend-head" style="background: ${mixColorWithWhite(color, 0.42)};">
             <span class="legend-head-title">${periodLabel(period)}</span>
             <span class="legend-head-actions">
               <button class="secondary legend-color-button" type="button" onclick="toggleHelpTooltip(event, '${period}')" title="${helpText}" style="background:#fff;color:#666;font-size:10px;font-weight:900;">?</button>
