@@ -219,6 +219,7 @@ TEMPLATE = r"""
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chore Planner</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='6' width='28' height='24' rx='3' fill='%23476f5b'/%3E%3Crect x='2' y='6' width='28' height='8' rx='3' fill='%23385848'/%3E%3Crect x='8' y='2' width='3' height='8' rx='1.5' fill='%23385848'/%3E%3Crect x='21' y='2' width='3' height='8' rx='1.5' fill='%23385848'/%3E%3Ccircle cx='10' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='16' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='22' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='10' cy='26' r='2' fill='%23fff' opacity='.5'/%3E%3Ccircle cx='16' cy='26' r='2' fill='%23fff' opacity='.5'/%3E%3C/svg%3E">
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
