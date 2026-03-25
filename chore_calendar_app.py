@@ -979,7 +979,7 @@ TEMPLATE = r"""
         overflow: hidden;
       }
 
-      .eyebrow, .period-switcher, .task-actions, .sheet-note, footer {
+      .eyebrow, .period-switcher, .task-actions, .sheet-note, footer, .help-button {
         display: none !important;
       }
 
@@ -1322,6 +1322,7 @@ TEMPLATE = r"""
             <div class="meta-chip" id="statsChip">0 tasks</div>
             <div class="meta-chip" id="periodChip">Daily</div>
             <div class="meta-chip" id="monthChip">March 2026</div>
+            <button class="meta-chip help-button" onclick="openHelpModal()" title="How to use" style="cursor:pointer;border:1px solid var(--line);background:#fff;font-weight:900;font-size:13px;padding:4px 10px;">?</button>
           </div>
         </div>
 
@@ -1461,6 +1462,52 @@ TEMPLATE = r"""
           <span>Restore Backup</span>
         </button>
         <input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="restoreBackup(event)">
+      </div>
+    </div>
+  </div>
+
+  <div class="task-modal" id="helpModal" hidden onclick="closeHelpModalOnBackdrop(event)">
+    <div class="settings-modal-card" role="dialog" aria-modal="true" aria-labelledby="helpModalHeading" style="max-width:560px;">
+      <div class="task-modal-head">
+        <div class="section-copy">
+          <div class="eyebrow">Help</div>
+          <h3 class="task-modal-title" id="helpModalHeading">How to use Chore Planner</h3>
+        </div>
+        <button type="button" class="secondary task-modal-close" onclick="closeHelpModal()">Close</button>
+      </div>
+      <div style="margin-top:14px;font-size:13px;line-height:1.6;color:#333;">
+        <p style="margin:0 0 12px;padding:10px;background:#fff8e8;border-radius:8px;border:1px solid #e8d8b0;font-weight:600;">
+          &#9888; Your data is stored <strong>only in this browser</strong> (localStorage). The server does not save anything. If you clear browser data or switch devices, your calendar will be empty.
+        </p>
+
+        <h4 style="margin:14px 0 6px;font-size:14px;">How to keep your data safe</h4>
+        <ul style="margin:0 0 10px;padding-left:20px;">
+          <li><strong>Share link</strong> &mdash; generates a compressed URL with all your data. Send it to someone or open it on another device to transfer your calendar.</li>
+          <li><strong>Backup</strong> &mdash; downloads a JSON file with your calendar. Use <em>Restore</em> to load it back anytime.</li>
+          <li>Data is auto-saved to your browser after every change.</li>
+        </ul>
+
+        <h4 style="margin:14px 0 6px;font-size:14px;">Task categories</h4>
+        <ul style="margin:0 0 10px;padding-left:20px;">
+          <li><strong>Daily</strong> &mdash; appears on every day of the month automatically.</li>
+          <li><strong>Weekly</strong> &mdash; appears every week on a chosen weekday. Drag the dot to a different day column to change the weekday.</li>
+          <li><strong>Monthly</strong> &mdash; appears once per month. Drag the dot to a specific date to pin it to that day.</li>
+          <li><strong>Custom</strong> &mdash; manual placement. Create a task, then drag it from the legend onto any calendar day you want. Click a dot on the calendar to remove it. The legend shows how many times the task is placed.</li>
+          <li><strong>Every N Days</strong> &mdash; repeats every N days within the month. Drag to set the start date.</li>
+        </ul>
+
+        <h4 style="margin:14px 0 6px;font-size:14px;">Tips</h4>
+        <ul style="margin:0 0 10px;padding-left:20px;">
+          <li>Click <strong>&#9998;</strong> next to a category to change its color.</li>
+          <li>Click <strong>+</strong> next to a category to quickly add a task in that group.</li>
+          <li>Use the <strong>period pills</strong> above the calendar to filter by category.</li>
+          <li>Use <strong>Print</strong> to generate an A4 landscape version for printing.</li>
+          <li>Use <strong>Settings</strong> to change the title, people list, and current month.</li>
+        </ul>
+
+        <p style="margin:10px 0 0;color:#999;font-size:11px;text-align:center;">
+          <a href="https://github.com/dzaczek/chore-calendar" target="_blank" rel="noopener" style="color:#999;">github.com/dzaczek/chore-calendar</a>
+        </p>
       </div>
     </div>
   </div>
@@ -1865,17 +1912,29 @@ TEMPLATE = r"""
       return entry;
     }
 
+    function periodHelpText(period) {
+      if (period === "daily") return "Tasks appear on every day of the month automatically.";
+      if (period === "weekly") return "Tasks appear on a chosen weekday every week. Drag to a different day to change.";
+      if (period === "monthly") return "Tasks appear once per month. Drag to a specific date to pin the day.";
+      if (period === "custom") return "Manual placement. Create a task here, then drag it onto any calendar day. Click a dot to remove it.";
+      const cp = findCustomPeriod(period);
+      if (cp) return `Tasks repeat every ${cp.interval} days. Drag to a date to set the start day.`;
+      return "";
+    }
+
     function periodSection(period, isCustom) {
       const color = currentCategoryColor(period);
       const visibleTasks = tasksForPeriod(period);
       const deleteBtn = isCustom
         ? `<button class="secondary legend-color-button" type="button" onclick="removeCustomPeriod('${period}')" title="Delete category" style="background:#e8a0a0;color:#4a1c1c;">x</button>`
         : "";
+      const helpText = periodHelpText(period);
       return `
         <section class="legend-group">
           <div class="legend-head" style="background: color-mix(in srgb, ${color} 42%, white);">
             <span class="legend-head-title">${periodLabel(period)}</span>
             <span class="legend-head-actions">
+              <button class="secondary legend-color-button" type="button" onclick="alert('${helpText}')" title="${helpText}" style="background:#fff;color:#666;font-size:10px;font-weight:900;">?</button>
               <button class="secondary legend-color-button" type="button" onclick="openCategoryColorPicker('${period}')" title="Change color" style="background:${color};">✎</button>
               <input id="categoryColor-${period}" class="legend-color-input" type="color" value="${color}" onchange="updateCategoryColor('${period}', this.value)">
               <button class="secondary legend-color-button" type="button" onclick="addTaskForPeriod('${period}')" title="Add task" style="background:${color};">+</button>
@@ -2075,7 +2134,7 @@ TEMPLATE = r"""
     }
 
     function syncModalBodyState() {
-      const hasOpenModal = ["taskModal", "settingsModal", "backupModal"].some(id => {
+      const hasOpenModal = ["taskModal", "settingsModal", "backupModal", "helpModal"].some(id => {
         const modal = document.getElementById(id);
         return modal && !modal.hidden;
       });
@@ -2290,6 +2349,23 @@ TEMPLATE = r"""
       });
     }
 
+    function openHelpModal() {
+      closeSettingsModal();
+      closeTaskModal();
+      closeBackupModal();
+      document.getElementById("helpModal").hidden = false;
+      syncModalBodyState();
+    }
+
+    function closeHelpModal() {
+      document.getElementById("helpModal").hidden = true;
+      syncModalBodyState();
+    }
+
+    function closeHelpModalOnBackdrop(event) {
+      if (event.target.id === "helpModal") closeHelpModal();
+    }
+
     function openBackupModal() {
       closeSettingsModal();
       closeTaskModal();
@@ -2365,7 +2441,9 @@ TEMPLATE = r"""
 
     render();
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape" && !document.getElementById("backupModal").hidden) {
+      if (event.key === "Escape" && !document.getElementById("helpModal").hidden) {
+        closeHelpModal();
+      } else if (event.key === "Escape" && !document.getElementById("backupModal").hidden) {
         closeBackupModal();
       } else if (event.key === "Escape" && !document.getElementById("settingsModal").hidden) {
         closeSettingsModal();
