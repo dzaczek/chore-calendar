@@ -1951,7 +1951,6 @@ TEMPLATE = r"""
 
     function renderFields() {
       document.getElementById("titleInput").value = state.settings.title || "";
-      document.getElementById("peopleInput").value = (state.settings.people || []).join(", ");
       document.getElementById("yearInput").value = state.settings.view_year || "";
 
       document.getElementById("monthSelect").innerHTML = MONTHS
@@ -2266,10 +2265,6 @@ TEMPLATE = r"""
 
     function applySettingsFormToState() {
       state.settings.title = document.getElementById("titleInput").value.trim() || "Chore Planner";
-      state.settings.people = document.getElementById("peopleInput").value
-        .split(",")
-        .map(value => value.trim())
-        .filter(Boolean);
 
       const monthValue = Number.parseInt(document.getElementById("monthSelect").value, 10);
       state.settings.view_month = Number.isFinite(monthValue) ? Math.min(12, Math.max(1, monthValue)) : currentMonth();
