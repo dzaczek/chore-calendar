@@ -2636,7 +2636,7 @@ TEMPLATE = r"""
       panel.style.display = "none";
       page.style.cssText = "display:block;max-width:none;margin:0;padding:0;";
       document.querySelector(".board").style.cssText = "border:0;box-shadow:none;padding:8px;background:white;min-height:0;overflow:visible;border-radius:0;";
-      board.style.cssText = "width:1120px;background:white;padding:8px;";
+      board.style.cssText = "width:1080px;background:white;padding:8px;";
       const hideEls = board.querySelectorAll(".board-intro, .period-switcher, .legend-actions, .legend-head-actions, .help-button, .eyebrow");
       hideEls.forEach(el => el.dataset.pdfHidden = el.style.display || "");
       hideEls.forEach(el => el.style.display = "none");
