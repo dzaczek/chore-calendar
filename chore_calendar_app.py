@@ -29,12 +29,12 @@ def security_headers(response):
     return response
 
 DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-PERIODS = ["daily", "weekly", "monthly", "quarterly"]
+PERIODS = ["daily", "weekly", "monthly", "custom"]
 DEFAULT_CATEGORY_COLORS = {
     "daily": "#9fc9af",
     "weekly": "#a8c8d8",
     "monthly": "#d8b0d2",
-    "quarterly": "#c3d4a2",
+    "custom": "#c3d4a2",
 }
 
 DEFAULT_DATA = {
@@ -67,6 +67,14 @@ DEFAULT_DATA = {
             "period": "monthly",
             "day": "Saturday",
             "icon": "F",
+        },
+        {
+            "id": "task-4",
+            "title": "Deep Clean",
+            "period": "custom",
+            "day": "",
+            "icon": "DC",
+            "placements": [],
         },
     ],
 }
@@ -108,11 +116,12 @@ def normalize_task(task, index):
         "daily": "daily",
         "weekly": "weekly",
         "monthly": "monthly",
-        "quarterly": "quarterly",
+        "quarterly": "custom",
+        "custom": "custom",
     }
     period = legacy_map.get(raw_period, raw_period if raw_period.startswith("every_") else "weekly")
     day = str(task.get("day") or "").strip()
-    if period == "daily":
+    if period in ("daily", "custom"):
         day = ""
     elif day not in DAYS:
         day = DAYS[0]
@@ -123,12 +132,12 @@ def normalize_task(task, index):
         or normalize_month_date(task.get("date_number"))
         or normalize_month_date(task.get("dateNumber"))
     )
-    if period not in {"monthly", "quarterly"}:
+    if period not in {"monthly"}:
         month_date = None
 
     icon = str(task.get("icon") or "").strip() or default_icon(title)
 
-    return {
+    result = {
         "id": str(task.get("id") or f"task-{index + 1}"),
         "title": title,
         "period": period,
@@ -136,6 +145,10 @@ def normalize_task(task, index):
         "month_date": month_date,
         "icon": icon[:4],
     }
+    if period == "custom":
+        placements = task.get("placements") if isinstance(task.get("placements"), list) else []
+        result["placements"] = placements
+    return result
 
 
 def normalize_data(raw_data):
@@ -220,7 +233,7 @@ TEMPLATE = r"""
 
       --weekly: #a8c8d8;
       --monthly: #d8b0d2;
-      --quarterly: #c3d4a2;
+      --custom: #c3d4a2;
       --shadow: 0 18px 42px rgba(69, 45, 20, 0.12);
       --radius: 20px;
     }
@@ -692,7 +705,7 @@ TEMPLATE = r"""
 
     .calendar-dot.weekly { background: var(--weekly); color: #173747; }
     .calendar-dot.monthly { background: var(--monthly); color: #4c2448; }
-    .calendar-dot.quarterly { background: var(--quarterly); color: #33441c; }
+    .calendar-dot.custom { background: var(--custom); color: #33441c; cursor: pointer; }
 
     .legend-groups {
       display: grid;
@@ -723,7 +736,7 @@ TEMPLATE = r"""
 
     .legend-head.weekly { background: color-mix(in srgb, var(--weekly) 42%, white); }
     .legend-head.monthly { background: color-mix(in srgb, var(--monthly) 42%, white); }
-    .legend-head.quarterly { background: color-mix(in srgb, var(--quarterly) 48%, white); }
+    .legend-head.custom { background: color-mix(in srgb, var(--custom) 48%, white); }
 
     .legend-head-title {
       min-width: 0;
@@ -754,7 +767,7 @@ TEMPLATE = r"""
 
     .legend-color-button.weekly { background: var(--weekly); color: #173747; }
     .legend-color-button.monthly { background: var(--monthly); color: #4c2448; }
-    .legend-color-button.quarterly { background: var(--quarterly); color: #33441c; }
+    .legend-color-button.custom { background: var(--custom); color: #33441c; }
 
     button.legend-color-button:hover {
       transform: translateY(-1px);
@@ -764,7 +777,7 @@ TEMPLATE = r"""
 
     button.legend-color-button.weekly:hover { background: var(--weekly); }
     button.legend-color-button.monthly:hover { background: var(--monthly); }
-    button.legend-color-button.quarterly:hover { background: var(--quarterly); }
+    button.legend-color-button.custom:hover { background: var(--custom); }
 
     .legend-color-input {
       position: absolute;
@@ -811,7 +824,7 @@ TEMPLATE = r"""
 
     .legend-icon.weekly { background: var(--weekly); color: #173747; }
     .legend-icon.monthly { background: var(--monthly); color: #4c2448; }
-    .legend-icon.quarterly { background: var(--quarterly); color: #33441c; }
+    .legend-icon.custom { background: var(--custom); color: #33441c; }
 
     .legend-copy {
       min-width: 0;
@@ -1377,7 +1390,7 @@ TEMPLATE = r"""
         <div class="section-copy">
           <div class="eyebrow">Task Window</div>
           <h3 class="task-modal-title" id="taskModalHeading">Add task</h3>
-          <p class="surface-note">Weekly tasks stay on a weekday. Monthly and every 3 months can later be moved to an exact date by drag and drop.</p>
+          <p class="surface-note">Weekly tasks stay on a weekday. Monthly can be moved to an exact date. Custom tasks are placed manually by dragging to calendar days.</p>
         </div>
         <button type="button" class="secondary task-modal-close" onclick="closeTaskModal()">Close</button>
       </div>
@@ -1520,7 +1533,7 @@ TEMPLATE = r"""
       if (period === "daily") return "Daily";
       if (period === "weekly") return "Weekly";
       if (period === "monthly") return "Monthly";
-      if (period === "quarterly") return "Every 3 Months";
+      if (period === "custom") return "Custom";
       const cp = findCustomPeriod(period);
       if (cp) return `Every ${cp.interval} Days`;
       return period;
@@ -1605,7 +1618,7 @@ TEMPLATE = r"""
     }
 
     function manualMonthDateForTask(task, dayLimit = null) {
-      if (!["monthly", "quarterly"].includes(task.period) && !isCustomPeriod(task.period)) {
+      if (!["monthly"].includes(task.period) && !isCustomPeriod(task.period)) {
         return null;
       }
 
@@ -1620,6 +1633,11 @@ TEMPLATE = r"""
     function taskScheduleLabel(task) {
       if (task.period === "daily") {
         return "All month";
+      }
+
+      if (task.period === "custom") {
+        const count = customPlacementsThisMonth(task).length;
+        return count > 0 ? `${count}× placed` : "Drag to calendar";
       }
 
       const cp = findCustomPeriod(task.period);
@@ -1673,9 +1691,21 @@ TEMPLATE = r"""
       return padded;
     }
 
+    function customPlacementsThisMonth(task) {
+      if (task.period !== "custom") return [];
+      const year = currentYear();
+      const month = currentMonth();
+      return (task.placements || []).filter(p => p.year === year && p.month === month);
+    }
+
     function matchingDatesForTask(task, cells) {
       if (task.period === "daily") {
         return cells.filter(Boolean).map(cell => cell.dateNumber);
+      }
+
+      if (task.period === "custom") {
+        const dates = customPlacementsThisMonth(task).map(p => p.date);
+        return [...new Set(dates)];
       }
 
       const cp = findCustomPeriod(task.period);
@@ -1857,6 +1887,18 @@ TEMPLATE = r"""
       `).join("");
     }
 
+    function removeCustomPlacement(taskId, dateNumber) {
+      const task = findTask(taskId);
+      if (!task || !task.placements) return;
+      const year = currentYear();
+      const month = currentMonth();
+      const idx = task.placements.findIndex(p => p.year === year && p.month === month && p.date === dateNumber);
+      if (idx >= 0) {
+        task.placements.splice(idx, 1);
+        saveAll(false, false);
+      }
+    }
+
     function setActivePeriod(period) {
       activePeriod = period;
       render();
@@ -1894,7 +1936,12 @@ TEMPLATE = r"""
 
         const zone = box.querySelector(".day-dropzone");
         dateTasks.forEach(task => {
-          zone.appendChild(calendarDot(task));
+          const dot = calendarDot(task);
+          if (task.period === "custom") {
+            dot.title = task.title + " (click to remove)";
+            dot.addEventListener("click", () => removeCustomPlacement(task.id, cell.dateNumber));
+          }
+          zone.appendChild(dot);
         });
       });
 
@@ -1920,6 +1967,20 @@ TEMPLATE = r"""
               return;
             }
 
+            if (task.period === "custom") {
+              if (!task.placements) task.placements = [];
+              const year = currentYear();
+              const month = currentMonth();
+              const date = parseInt(event.to.dataset.date, 10);
+              const already = task.placements.some(p => p.year === year && p.month === month && p.date === date);
+              if (!already) {
+                task.placements.push({year, month, date});
+              }
+              await saveAll(false, false);
+              render();
+              return;
+            }
+
             if (task.period === "weekly") {
               task.day = event.to.dataset.day;
               delete task.month_date;
@@ -1940,7 +2001,7 @@ TEMPLATE = r"""
     function toggleDayField() {
       const frequency = document.getElementById("taskPeriod").value;
       const isCustom = isCustomPeriod(frequency);
-      document.getElementById("taskDayWrap").style.display = (frequency === "daily" || isCustom) ? "none" : "block";
+      document.getElementById("taskDayWrap").style.display = (frequency === "daily" || frequency === "custom" || isCustom) ? "none" : "block";
     }
 
     function updateTaskModalState() {
@@ -2077,7 +2138,7 @@ TEMPLATE = r"""
       const iconInput = document.getElementById("taskIcon").value.trim();
       const period = document.getElementById("taskPeriod").value;
       const isCustom = isCustomPeriod(period);
-      const day = (period === "daily" || isCustom) ? "" : document.getElementById("taskDay").value;
+      const day = (period === "daily" || period === "custom" || isCustom) ? "" : document.getElementById("taskDay").value;
 
       if (!title) {
         alert("Please enter a task name.");
@@ -2096,7 +2157,7 @@ TEMPLATE = r"""
         existingTask.icon = (iconInput || defaultIcon(title)).slice(0, 4);
         existingTask.period = period;
         existingTask.day = day;
-        if (period === "daily" || period === "weekly" || isCustom) {
+        if (period === "daily" || period === "weekly" || period === "custom" || isCustom) {
           delete existingTask.month_date;
         } else {
           const manualDate = parseMonthDate(existingTask.month_date);
@@ -2106,14 +2167,24 @@ TEMPLATE = r"""
             existingTask.month_date = manualDate;
           }
         }
+        if (period === "custom" && !existingTask.placements) {
+          existingTask.placements = [];
+        }
+        if (period !== "custom") {
+          delete existingTask.placements;
+        }
       } else {
-        state.tasks.push({
+        const newTask = {
           id: uid(),
           title,
           period,
           day,
           icon: (iconInput || defaultIcon(title)).slice(0, 4)
-        });
+        };
+        if (period === "custom") {
+          newTask.placements = [];
+        }
+        state.tasks.push(newTask);
       }
 
       const saved = await saveAll(false, false);
