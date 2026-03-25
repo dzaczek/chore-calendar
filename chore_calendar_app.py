@@ -2327,9 +2327,49 @@ TEMPLATE = r"""
       closeTaskModal();
     }
 
+    function nthWeekdayInMonth(year, month, weekday, n) {
+      let count = 0;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      for (let d = 1; d <= daysInMonth; d++) {
+        if (new Date(year, month - 1, d).getDay() === weekday) {
+          count++;
+          if (count === n) return d;
+        }
+      }
+      return null;
+    }
+
+    function migrateCustomPlacements(oldYear, oldMonth, newYear, newMonth) {
+      if (oldYear === newYear && oldMonth === newMonth) return;
+      state.tasks.forEach(task => {
+        if (task.period !== "custom" || !task.placements) return;
+        const oldPlacements = task.placements.filter(p => p.year === oldYear && p.month === oldMonth);
+        if (oldPlacements.length === 0) return;
+        const hasNew = task.placements.some(p => p.year === newYear && p.month === newMonth);
+        if (hasNew) return;
+        oldPlacements.forEach(p => {
+          const oldDate = new Date(oldYear, oldMonth - 1, p.date);
+          const weekday = oldDate.getDay();
+          let nth = 0;
+          for (let d = 1; d <= p.date; d++) {
+            if (new Date(oldYear, oldMonth - 1, d).getDay() === weekday) nth++;
+          }
+          const newDate = nthWeekdayInMonth(newYear, newMonth, weekday, nth);
+          if (newDate && !task.placements.some(pp => pp.year === newYear && pp.month === newMonth && pp.date === newDate)) {
+            task.placements.push({year: newYear, month: newMonth, date: newDate});
+          }
+        });
+      });
+    }
+
     async function submitSettingsForm(event) {
       event.preventDefault();
+      const oldYear = currentYear();
+      const oldMonth = currentMonth();
       applySettingsFormToState();
+      const newYear = currentYear();
+      const newMonth = currentMonth();
+      migrateCustomPlacements(oldYear, oldMonth, newYear, newMonth);
       const saved = await saveAll(true, false);
       if (saved === false) {
         return;
