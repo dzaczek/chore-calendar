@@ -62,6 +62,7 @@ services:
       - "--port=7890"
       - "--addr=0.0.0.0"
       - "--no-ip-validation"
+      - "--exclude-ip=127.0.0.1"
     ports:
       - "127.0.0.1:7890:7890"
     volumes:
