@@ -1856,7 +1856,13 @@ TEMPLATE = r"""
       return state.tasks.filter(task => task.period === period);
     }
 
+    const THEME_OVERRIDES_CATEGORIES = ["grayscale", "high-contrast", "colorblind"];
+
     function currentCategoryColor(period) {
+      const themeName = state.settings.theme || "garden";
+      if (THEME_OVERRIDES_CATEGORIES.includes(themeName) && THEMES[themeName] && THEMES[themeName][period]) {
+        return THEMES[themeName][period];
+      }
       const customColors = state.settings.category_colors || {};
       if (customColors[period]) return customColors[period];
       if (DEFAULT_CATEGORY_COLORS[period]) return DEFAULT_CATEGORY_COLORS[period];
@@ -1865,8 +1871,14 @@ TEMPLATE = r"""
     }
 
     function applyCategoryColors() {
+      const themeName = state.settings.theme || "garden";
+      const themeForceColors = THEME_OVERRIDES_CATEGORIES.includes(themeName);
       allPeriods().forEach(period => {
-        document.documentElement.style.setProperty(`--${period}`, currentCategoryColor(period));
+        if (themeForceColors && THEMES[themeName] && THEMES[themeName][period]) {
+          document.documentElement.style.setProperty(`--${period}`, THEMES[themeName][period]);
+        } else {
+          document.documentElement.style.setProperty(`--${period}`, currentCategoryColor(period));
+        }
       });
     }
 
