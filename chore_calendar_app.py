@@ -38,6 +38,10 @@ DEFAULT_CATEGORY_COLORS = {
     "custom": "#c3d4a2",
 }
 
+AVAILABLE_THEMES = [
+    "garden", "high-contrast", "pastel", "ocean", "sunset", "dark", "colorblind",
+]
+
 DEFAULT_DATA = {
     "settings": {
         "title": "Chore Planner",
@@ -47,6 +51,7 @@ DEFAULT_DATA = {
         "category_colors": deepcopy(DEFAULT_CATEGORY_COLORS),
         "custom_periods": [],
         "week_start": "sunday",
+        "theme": "garden",
     },
     "tasks": [
         {
@@ -176,6 +181,7 @@ def normalize_data(raw_data):
             ),
             "custom_periods": settings.get("custom_periods") if isinstance(settings.get("custom_periods"), list) else [],
             "week_start": settings.get("week_start") if settings.get("week_start") in ("sunday", "monday") else "sunday",
+            "theme": settings.get("theme") if settings.get("theme") in AVAILABLE_THEMES else "garden",
         },
         "tasks": [normalize_task(task, index) for index, task in enumerate(tasks)],
     }
@@ -259,9 +265,8 @@ TEMPLATE = r"""
       min-height: 100vh;
       color: var(--text);
       font-family: "Avenir Next", "Trebuchet MS", sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(255,255,255,0.75), transparent 32%),
-        linear-gradient(135deg, var(--bg), var(--bg-accent));
+      background: linear-gradient(135deg, var(--bg), var(--bg-accent));
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
     body.modal-open {
@@ -301,7 +306,7 @@ TEMPLATE = r"""
     .board {
       padding: 16px;
       overflow: auto;
-      background: rgba(255, 255, 255, 0.72);
+      background: var(--card);
       min-height: calc(100vh - 48px);
     }
 
@@ -310,7 +315,7 @@ TEMPLATE = r"""
       min-height: 190mm;
       margin: 0 auto;
       padding: 4mm;
-      background: white;
+      background: white; /* print always white */
       border: none;
       box-shadow: none;
     }
@@ -387,7 +392,7 @@ TEMPLATE = r"""
       border-radius: 14px;
       padding: 11px 12px;
       color: var(--text);
-      background: rgba(255,255,255,0.82);
+      background: var(--card);
     }
 
     .row {
@@ -498,8 +503,9 @@ TEMPLATE = r"""
       overflow: auto;
       padding: 20px;
       border-radius: 24px;
-      border: 1px solid rgba(136, 108, 72, 0.16);
-      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--text);
       box-shadow: var(--shadow);
     }
 
@@ -550,7 +556,7 @@ TEMPLATE = r"""
       padding: 4px 8px;
       border-radius: 4px;
       border: 1px solid var(--line);
-      background: #fff;
+      background: var(--card);
       color: var(--muted);
       font-size: 11px;
       font-weight: 700;
@@ -572,10 +578,10 @@ TEMPLATE = r"""
     }
 
     .surface {
-      border: 1px solid rgba(101, 113, 102, 0.18);
+      border: 1px solid var(--line);
       border-radius: 6px;
       padding: 12px;
-      background: rgba(255, 255, 255, 0.78);
+      background: var(--card);
       min-width: 0;
     }
 
@@ -588,7 +594,7 @@ TEMPLATE = r"""
 
     .legend-surface {
       padding: 8px;
-      background: rgba(247, 250, 244, 0.86);
+      background: var(--bg-accent);
       display: flex;
       flex-direction: column;
       min-height: 100%;
@@ -614,7 +620,7 @@ TEMPLATE = r"""
 
     .period-pill {
       border: 1px solid var(--line);
-      background: #fff;
+      background: var(--card);
       color: var(--muted);
       border-radius: 4px;
       padding: 7px 10px;
@@ -644,9 +650,9 @@ TEMPLATE = r"""
       min-width: 0;
       display: flex;
       flex-direction: column;
-      border: 1px solid rgba(136, 108, 72, 0.16);
+      border: 1px solid var(--line);
       border-radius: 4px;
-      background: rgba(255, 255, 255, 0.64);
+      background: var(--card);
       overflow: hidden;
       min-height: 0;
     }
@@ -729,8 +735,8 @@ TEMPLATE = r"""
     }
 
     .legend-group {
-      border: 1px solid rgba(101, 113, 102, 0.18);
-      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--line);
+      background: var(--card);
     }
 
     .legend-head {
@@ -774,7 +780,7 @@ TEMPLATE = r"""
       font-size: 9px;
       line-height: 1;
       color: var(--text);
-      background: #fff;
+      background: var(--card);
     }
 
     .legend-color-button.daily { background: var(--daily); color: #1c3a25; }
@@ -893,12 +899,12 @@ TEMPLATE = r"""
       width: 220px;
       padding: 10px 12px;
       border-radius: 10px;
-      background: rgba(255,255,255,0.97);
-      border: 1px solid rgba(136,108,72,0.2);
+      background: var(--bg);
+      border: 1px solid var(--line);
       box-shadow: 0 8px 24px rgba(0,0,0,0.15);
       font-size: 12px;
       line-height: 1.5;
-      color: #333;
+      color: var(--text);
       pointer-events: auto;
     }
 
@@ -909,9 +915,9 @@ TEMPLATE = r"""
       right: 14px;
       width: 10px;
       height: 10px;
-      background: rgba(255,255,255,0.97);
-      border-top: 1px solid rgba(136,108,72,0.2);
-      border-left: 1px solid rgba(136,108,72,0.2);
+      background: var(--bg);
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
       transform: rotate(45deg);
     }
 
@@ -934,7 +940,7 @@ TEMPLATE = r"""
       color: var(--muted);
       text-align: center;
       font-size: 13px;
-      background: rgba(255,255,255,0.44);
+      background: var(--chip);
     }
 
     .helper {
@@ -1430,7 +1436,7 @@ TEMPLATE = r"""
             <div class="meta-chip" id="statsChip">0 tasks</div>
 
             <div class="meta-chip" id="monthChip">March 2026</div>
-            <button class="meta-chip help-button" onclick="openHelpModal()" title="How to use" style="cursor:pointer;border:1px solid var(--line);background:#fff;font-weight:900;font-size:13px;padding:4px 10px;">?</button>
+            <button class="meta-chip help-button" onclick="openHelpModal()" title="How to use" style="cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:900;font-size:13px;padding:4px 10px;">?</button>
           </div>
         </div>
 
@@ -1499,6 +1505,19 @@ TEMPLATE = r"""
           <select id="weekStartSelect">
             <option value="sunday">Sunday</option>
             <option value="monday">Monday</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="themeSelect">Color theme</label>
+          <select id="themeSelect" onchange="previewTheme(this.value)">
+            <option value="garden">Garden</option>
+            <option value="high-contrast">High Contrast</option>
+            <option value="pastel">Pastel</option>
+            <option value="ocean">Ocean</option>
+            <option value="sunset">Sunset</option>
+            <option value="dark">Dark</option>
+            <option value="colorblind">Colorblind</option>
           </select>
         </div>
 
@@ -1642,6 +1661,71 @@ TEMPLATE = r"""
     const DEFAULT_CATEGORY_COLORS = {{ default_category_colors|tojson }};
     const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const STORAGE_KEY = "chore_planner_data";
+
+    const THEMES = {
+      "garden": {
+        bg: "#eef1ea", "bg-accent": "#f7faf4", card: "rgba(255,255,255,0.86)",
+        line: "#b9c4ba", text: "#26312a", muted: "#657166",
+        accent: "#476f5b", "accent-strong": "#385848", chip: "#edf4ec",
+        daily: "#9fc9af", weekly: "#a8c8d8", monthly: "#d8b0d2", custom: "#c3d4a2",
+        shadow: "0 18px 42px rgba(69,45,20,0.12)"
+      },
+      "high-contrast": {
+        bg: "#ffffff", "bg-accent": "#f5f5f5", card: "rgba(255,255,255,1)",
+        line: "#000000", text: "#000000", muted: "#333333",
+        accent: "#000000", "accent-strong": "#000000", chip: "#e0e0e0",
+        daily: "#4caf50", weekly: "#2196f3", monthly: "#e91e63", custom: "#ff9800",
+        shadow: "0 2px 8px rgba(0,0,0,0.2)"
+      },
+      "pastel": {
+        bg: "#fdf2f8", "bg-accent": "#fce7f3", card: "rgba(255,255,255,0.9)",
+        line: "#e8b4d0", text: "#4a2040", muted: "#8b5e7a",
+        accent: "#c06090", "accent-strong": "#a04878", chip: "#fce4ec",
+        daily: "#f8bbd0", weekly: "#b3e5fc", monthly: "#e1bee7", custom: "#c8e6c9",
+        shadow: "0 18px 42px rgba(180,100,140,0.1)"
+      },
+      "ocean": {
+        bg: "#e8f4f8", "bg-accent": "#d0ecf4", card: "rgba(255,255,255,0.88)",
+        line: "#90b8c8", text: "#1a3a4a", muted: "#4a7080",
+        accent: "#0077a8", "accent-strong": "#005f88", chip: "#e0f0f8",
+        daily: "#80cbc4", weekly: "#64b5f6", monthly: "#ab97d4", custom: "#a5d6a7",
+        shadow: "0 18px 42px rgba(0,80,120,0.12)"
+      },
+      "sunset": {
+        bg: "#fef3e2", "bg-accent": "#fde8c8", card: "rgba(255,255,255,0.88)",
+        line: "#d4a574", text: "#3e2412", muted: "#7a5530",
+        accent: "#d4652a", "accent-strong": "#b8501a", chip: "#fce8d0",
+        daily: "#ffb74d", weekly: "#ff8a65", monthly: "#f06292", custom: "#aed581",
+        shadow: "0 18px 42px rgba(120,60,20,0.14)"
+      },
+      "dark": {
+        bg: "#1a1a2e", "bg-accent": "#16213e", card: "rgba(30,30,50,0.92)",
+        line: "#3a3a5c", text: "#e0e0e8", muted: "#9090a8",
+        accent: "#6c8cff", "accent-strong": "#5070e0", chip: "#2a2a4a",
+        daily: "#66bb6a", weekly: "#42a5f5", monthly: "#ab47bc", custom: "#8bc34a",
+        shadow: "0 18px 42px rgba(0,0,0,0.4)"
+      },
+      "colorblind": {
+        bg: "#f5f5f0", "bg-accent": "#eeeee8", card: "rgba(255,255,255,0.9)",
+        line: "#b0b0a8", text: "#1a1a1a", muted: "#555550",
+        accent: "#0072b2", "accent-strong": "#005a8c", chip: "#e8e8e0",
+        daily: "#0072b2", weekly: "#e69f00", monthly: "#cc79a7", custom: "#009e73",
+        shadow: "0 18px 42px rgba(50,50,40,0.12)"
+      }
+    };
+
+    function applyTheme(themeName) {
+      const theme = THEMES[themeName] || THEMES["garden"];
+      const root = document.documentElement;
+      Object.entries(theme).forEach(([key, value]) => {
+        root.style.setProperty("--" + key, value);
+      });
+    }
+
+    function previewTheme(themeName) {
+      applyTheme(themeName);
+    }
+
     const serverDefaults = {{ initial_data|safe }};
     let state = loadInitialState();
     let activePeriod = "all";
@@ -1983,6 +2067,8 @@ TEMPLATE = r"""
 
       document.getElementById("weekStartSelect").value = state.settings.week_start || "sunday";
 
+      document.getElementById("themeSelect").value = state.settings.theme || "garden";
+
       const taskPeriodInput = document.getElementById("taskPeriod");
       const all = allPeriods();
       const selectedTaskPeriod = all.includes(taskPeriodInput.value) ? taskPeriodInput.value : "daily";
@@ -1999,6 +2085,7 @@ TEMPLATE = r"""
       taskDayInput.value = selectedTaskDay;
 
       updateTaskModalState();
+      applyTheme(state.settings.theme || "garden");
       applyCategoryColors();
       toggleDayField();
     }
@@ -2079,7 +2166,7 @@ TEMPLATE = r"""
           <div class="legend-head" style="background: ${mixColorWithWhite(color, 0.42)};">
             <span class="legend-head-title">${periodLabel(period)}</span>
             <span class="legend-head-actions">
-              <button class="secondary legend-color-button" type="button" onclick="toggleHelpTooltip(event, '${period}')" title="${helpText}" style="background:#fff;color:#666;font-size:10px;font-weight:900;">?</button>
+              <button class="secondary legend-color-button" type="button" onclick="toggleHelpTooltip(event, '${period}')" title="${helpText}" style="background:var(--card);color:var(--muted);font-size:10px;font-weight:900;">?</button>
               <button class="secondary legend-color-button" type="button" onclick="openCategoryColorPicker('${period}')" title="Change color" style="background:${color};">✎</button>
               <input id="categoryColor-${period}" class="legend-color-input" type="color" value="${color}" onchange="updateCategoryColor('${period}', this.value)">
               <button class="secondary legend-color-button" type="button" onclick="addTaskForPeriod('${period}')" title="Add task" style="background:${color};">+</button>
@@ -2295,6 +2382,8 @@ TEMPLATE = r"""
       state.settings.view_year = Number.isFinite(yearValue) ? Math.min(2100, Math.max(2000, yearValue)) : currentYear();
 
       state.settings.week_start = document.getElementById("weekStartSelect").value || "sunday";
+
+      state.settings.theme = document.getElementById("themeSelect").value || "garden";
     }
 
     function openSettingsModal() {
@@ -2313,6 +2402,7 @@ TEMPLATE = r"""
       }
 
       modal.hidden = true;
+      applyTheme(state.settings.theme || "garden");
       renderFields();
       syncModalBodyState();
     }
@@ -2543,7 +2633,8 @@ TEMPLATE = r"""
           view_month: today.getMonth() + 1,
           category_colors: JSON.parse(JSON.stringify(DEFAULT_CATEGORY_COLORS)),
           custom_periods: [],
-          week_start: "sunday"
+          week_start: "sunday",
+          theme: "garden"
         },
         tasks: []
       };
