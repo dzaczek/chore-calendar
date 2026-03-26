@@ -39,7 +39,7 @@ DEFAULT_CATEGORY_COLORS = {
 }
 
 AVAILABLE_THEMES = [
-    "garden", "high-contrast", "pastel", "ocean", "sunset", "dark", "colorblind",
+    "garden", "high-contrast", "pastel", "ocean", "sunset", "dark", "colorblind", "grayscale",
 ]
 
 DEFAULT_DATA = {
@@ -1518,6 +1518,7 @@ TEMPLATE = r"""
             <option value="sunset">Sunset</option>
             <option value="dark">Dark</option>
             <option value="colorblind">Colorblind</option>
+            <option value="grayscale">Grayscale</option>
           </select>
         </div>
 
@@ -1711,6 +1712,13 @@ TEMPLATE = r"""
         accent: "#0072b2", "accent-strong": "#005a8c", chip: "#e8e8e0",
         daily: "#0072b2", weekly: "#e69f00", monthly: "#cc79a7", custom: "#009e73",
         shadow: "0 18px 42px rgba(50,50,40,0.12)"
+      },
+      "grayscale": {
+        bg: "#ffffff", "bg-accent": "#f5f5f5", card: "rgba(255,255,255,1)",
+        line: "#aaaaaa", text: "#000000", muted: "#555555",
+        accent: "#333333", "accent-strong": "#111111", chip: "#eeeeee",
+        daily: "#999999", weekly: "#bbbbbb", monthly: "#777777", custom: "#dddddd",
+        shadow: "0 2px 6px rgba(0,0,0,0.15)"
       }
     };
 
