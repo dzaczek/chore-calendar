@@ -54,7 +54,7 @@ The Docker setup includes:
 - Non-root container user with no shell
 - All Linux capabilities dropped (`cap_drop: ALL`)
 - No privilege escalation (`no-new-privileges`)
-- CPU and memory limits (1 CPU, 256MB)
+- CPU and memory limits (1 CPU, 768MB)
 - Security headers: CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy
 - Gunicorn with request size limits and worker recycling
 

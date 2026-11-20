@@ -24,7 +24,7 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: 512M
+          memory: 768M
         reservations:
           cpus: "0.25"
           memory: 64M
@@ -42,7 +42,8 @@ services:
 
     # --- Health check ---
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')"]
+      # Sends CF-Connecting-IP: 127.0.0.1 so GoAccess drops these lines via --exclude-ip=127.0.0.1.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/', headers={'CF-Connecting-IP': '127.0.0.1'}))"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -125,9 +126,11 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: chore-cloudflared
     restart: unless-stopped
-    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
-    env_file:
-      - .env
+    # Token is passed via TUNNEL_TOKEN (read natively by cloudflared), not argv,
+    # so it does not show up in `ps` or in `docker inspect` Args.
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:?CF_TUNNEL_TOKEN must be set in .env}
 
     # --- Security hardening ---
     read_only: true

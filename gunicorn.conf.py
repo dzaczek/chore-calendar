@@ -15,16 +15,16 @@ limit_request_fields = 50
 limit_request_field_size = 8190
 accesslog = "/var/log/gunicorn/access.log"
 errorlog = "-"
-access_log_format = '%({x-forwarded-for}i)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
+# Client IP from CF-Connecting-IP: set by Cloudflare's edge, not spoofable through the tunnel.
+# Field order matches GoAccess --log-format=COMBINED.
+access_log_format = '%({cf-connecting-ip}i)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 loglevel = "warning"
 preload_app = True
 
 # --- Cloudflare Tunnel / Reverse Proxy ---
-# Uncomment these when running behind Cloudflare Tunnel or any reverse proxy.
-# They allow gunicorn to trust X-Forwarded-* headers for correct client IP
-# and HTTPS detection.
+# Only trust X-Forwarded-* headers from the internal Docker network
+# (chore-calendar_internal), where cloudflared is the only proxy.
 
-forwarded_allow_ips = "*"          # Trust proxy headers from any source (safe behind CF tunnel in internal network)
+forwarded_allow_ips = "172.19.0.0/16"
 # secure_scheme_headers = {"X-Forwarded-Proto": "https"}  # Detect HTTPS from CF header
 proxy_protocol = False             # CF tunnel uses HTTP, not PROXY protocol
-proxy_allow_from = "*"             # Allow proxy connections from any internal IP
