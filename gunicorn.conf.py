@@ -22,9 +22,10 @@ loglevel = "warning"
 preload_app = True
 
 # --- Cloudflare Tunnel / Reverse Proxy ---
-# Only trust X-Forwarded-* headers from the internal Docker network
-# (chore-calendar_internal), where cloudflared is the only proxy.
+# Trust no X-Forwarded-* headers: the app never reads the client IP, and the
+# access log takes CF-Connecting-IP straight from the header. gunicorn 23 does
+# not accept CIDR ranges here, so a subnet value makes it refuse to start.
 
-forwarded_allow_ips = "172.19.0.0/16"
+forwarded_allow_ips = "127.0.0.1,::1"
 # secure_scheme_headers = {"X-Forwarded-Proto": "https"}  # Detect HTTPS from CF header
 proxy_protocol = False             # CF tunnel uses HTTP, not PROXY protocol
