@@ -234,10 +234,10 @@ TEMPLATE = r"""
   <title>Chore Planner</title>
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23476f5b'/%3E%3Crect x='2' y='6' width='28' height='24' rx='3' fill='%23476f5b'/%3E%3Crect x='2' y='6' width='28' height='8' rx='3' fill='%23385848'/%3E%3Crect x='8' y='2' width='3' height='8' rx='1.5' fill='%23385848'/%3E%3Crect x='21' y='2' width='3' height='8' rx='1.5' fill='%23385848'/%3E%3Ccircle cx='10' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='16' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='22' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='10' cy='26' r='2' fill='%23fff' opacity='.5'/%3E%3Ccircle cx='16' cy='26' r='2' fill='%23fff' opacity='.5'/%3E%3C/svg%3E">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='6' width='28' height='24' rx='3' fill='%23476f5b'/%3E%3Crect x='2' y='6' width='28' height='8' rx='3' fill='%23385848'/%3E%3Crect x='8' y='2' width='3' height='8' rx='1.5' fill='%23385848'/%3E%3Crect x='21' y='2' width='3' height='8' rx='1.5' fill='%23385848'/%3E%3Ccircle cx='10' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='16' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='22' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='10' cy='26' r='2' fill='%23fff' opacity='.5'/%3E%3Ccircle cx='16' cy='26' r='2' fill='%23fff' opacity='.5'/%3E%3C/svg%3E">
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" integrity="sha384-BSxuMLxX+FCbTdYec3TbXlnMGEEM2QXTFdtDaveen71o+jswm2J36+xFqp8k4VHM" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js" integrity="sha384-0d+Gr7vM4Drod8E3hXKgciWJSWbjD/opKLLygI9ktiWbuvlDwQLzU46wJ9s5gsp7" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" integrity="sha384-lQXOAyZwHXE55JFyrOMB7nY2Wv+m5ZWNtJcHrd1rceRQXAYNLak8ukN5TjBTcIwz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js" integrity="sha384-EaWTV/aVUkLz3tfwg3+5ycX7Q/d9ET9ruOKUgUuFIRUCfzHO1eo2J62a844iWPmY" crossorigin="anonymous"></script>
   <style>
     :root {
       --bg: #eef1ea;
@@ -1735,9 +1735,101 @@ TEMPLATE = r"""
     }
 
     const serverDefaults = {{ initial_data|safe }};
+    const CUSTOM_PERIOD_ID_RE = /^every_\d{1,2}$/;
+    const TASK_ID_RE = /^[\w-]{1,32}$/;
+    const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
     let state = loadInitialState();
     let activePeriod = "all";
     let taskModalTaskId = null;
+
+    function isPlainObject(value) {
+      return value !== null && typeof value === "object" && !Array.isArray(value);
+    }
+
+    function cleanString(value, maxLength) {
+      if (typeof value !== "string" && typeof value !== "number") return "";
+      return String(value).trim().slice(0, maxLength);
+    }
+
+    function cleanInt(value, min, max) {
+      return Number.isInteger(value) && value >= min && value <= max ? value : null;
+    }
+
+    // Single sanitizer for every untrusted state source (share link, localStorage, backup file).
+    // Returns a state containing only known keys with validated values; invalid entries are dropped.
+    function normalizeState(raw) {
+      if (!isPlainObject(raw)) {
+        raw = JSON.parse(JSON.stringify(serverDefaults));
+      }
+      const settings = isPlainObject(raw.settings) ? raw.settings : {};
+      const today = new Date();
+
+      const customPeriodList = [];
+      (Array.isArray(settings.custom_periods) ? settings.custom_periods : []).forEach(cp => {
+        if (!isPlainObject(cp)) return;
+        const id = typeof cp.id === "string" && CUSTOM_PERIOD_ID_RE.test(cp.id) ? cp.id : null;
+        const interval = cleanInt(cp.interval, 2, 30);
+        const color = typeof cp.color === "string" && HEX_COLOR_RE.test(cp.color) ? cp.color : null;
+        if (!id || interval === null || !color) return;
+        if (customPeriodList.some(existing => existing.id === id)) return;
+        customPeriodList.push({ id, interval, color });
+      });
+      const validPeriods = [...PERIODS, ...customPeriodList.map(cp => cp.id)];
+
+      const categoryColors = {};
+      const rawColors = isPlainObject(settings.category_colors) ? settings.category_colors : {};
+      validPeriods.forEach(period => {
+        const color = rawColors[period];
+        if (typeof color === "string" && HEX_COLOR_RE.test(color)) categoryColors[period] = color;
+      });
+
+      const people = (Array.isArray(settings.people) ? settings.people : [])
+        .map(person => cleanString(person, 50))
+        .filter(Boolean)
+        .slice(0, 50);
+
+      const tasks = [];
+      const seenIds = new Set();
+      (Array.isArray(raw.tasks) ? raw.tasks : []).forEach(task => {
+        if (!isPlainObject(task) || tasks.length >= 500) return;
+        const id = typeof task.id === "string" && TASK_ID_RE.test(task.id) ? task.id : null;
+        const period = typeof task.period === "string" && validPeriods.includes(task.period) ? task.period : null;
+        const title = cleanString(task.title, 100);
+        if (!id || !period || !title || seenIds.has(id)) return;
+        seenIds.add(id);
+        const clean = {
+          id,
+          title,
+          period,
+          day: DAYS.includes(task.day) ? task.day : "",
+          icon: cleanString(task.icon, 4) || defaultIcon(title).slice(0, 4)
+        };
+        const monthDate = cleanInt(task.month_date, 1, 31);
+        if (monthDate !== null) clean.month_date = monthDate;
+        if (period === "custom") {
+          clean.placements = (Array.isArray(task.placements) ? task.placements : [])
+            .filter(p => isPlainObject(p))
+            .map(p => ({ year: cleanInt(p.year, 2000, 2100), month: cleanInt(p.month, 1, 12), date: cleanInt(p.date, 1, 31) }))
+            .filter(p => p.year !== null && p.month !== null && p.date !== null)
+            .slice(0, 1000);
+        }
+        tasks.push(clean);
+      });
+
+      return {
+        settings: {
+          title: cleanString(settings.title, 100) || "Chore Planner",
+          people,
+          view_year: cleanInt(settings.view_year, 2000, 2100) ?? today.getFullYear(),
+          view_month: cleanInt(settings.view_month, 1, 12) ?? today.getMonth() + 1,
+          category_colors: categoryColors,
+          custom_periods: customPeriodList,
+          week_start: settings.week_start === "monday" ? "monday" : "sunday",
+          theme: Object.prototype.hasOwnProperty.call(THEMES, settings.theme) ? settings.theme : "garden"
+        },
+        tasks
+      };
+    }
 
     function loadInitialState() {
       const urlParam = new URLSearchParams(window.location.search).get("d");
@@ -1746,7 +1838,7 @@ TEMPLATE = r"""
         try {
           const json = LZString.decompressFromEncodedURIComponent(urlParam);
           if (json) {
-            const parsed = JSON.parse(json);
+            const parsed = normalizeState(JSON.parse(json));
             const clean = new URL(window.location);
             clean.searchParams.delete("d");
             clean.searchParams.delete("period");
@@ -1761,7 +1853,7 @@ TEMPLATE = r"""
                 saveToLocalStorage(parsed);
                 return parsed;
               } else {
-                return JSON.parse(existing);
+                return loadStoredState(existing);
               }
             }
             saveToLocalStorage(parsed);
@@ -1770,9 +1862,17 @@ TEMPLATE = r"""
         } catch (e) { /* ignore bad URL data */ }
       }
       if (existing) {
-        try { return JSON.parse(existing); } catch (e) { /* ignore */ }
+        return loadStoredState(existing);
       }
-      return serverDefaults;
+      return normalizeState(serverDefaults);
+    }
+
+    function loadStoredState(existing) {
+      let parsed = null;
+      try { parsed = JSON.parse(existing); } catch (e) { /* ignore */ }
+      const clean = normalizeState(parsed);
+      saveToLocalStorage(clean);
+      return clean;
     }
 
     function saveToLocalStorage(data) {
@@ -2093,7 +2193,7 @@ TEMPLATE = r"""
       const all = allPeriods();
       const selectedTaskPeriod = all.includes(taskPeriodInput.value) ? taskPeriodInput.value : "daily";
       taskPeriodInput.innerHTML = all
-        .map(period => `<option value="${period}">${periodLabel(period)}</option>`)
+        .map(period => `<option value="${escapeHtml(period)}">${escapeHtml(periodLabel(period))}</option>`)
         .join("");
       taskPeriodInput.value = selectedTaskPeriod;
 
@@ -2149,18 +2249,20 @@ TEMPLATE = r"""
       entry.dataset.taskId = task.id;
       const iconStyle = periodStyle(task.period);
       entry.innerHTML = `
-        <div class="legend-icon ${task.period}" ${iconStyle ? `style="${iconStyle}"` : ""}>${escapeHtml((task.icon || defaultIcon(task.title)).slice(0, 3))}</div>
+        <div class="legend-icon ${escapeHtml(task.period)}" ${iconStyle ? `style="${escapeHtml(iconStyle)}"` : ""}>${escapeHtml((task.icon || defaultIcon(task.title)).slice(0, 3))}</div>
         <div class="legend-copy">
           <div class="legend-top">
             <div class="legend-title">${escapeHtml(task.title)}</div>
             <div class="legend-actions">
-              <button class="secondary icon-action" onclick="editTask('${task.id}')" title="Edit">✎</button>
-              <button class="secondary icon-action" onclick="deleteTask('${task.id}')" title="Delete">🗑</button>
+              <button class="secondary icon-action" data-task-action="edit" title="Edit">✎</button>
+              <button class="secondary icon-action" data-task-action="delete" title="Delete">🗑</button>
             </div>
           </div>
           <div class="legend-sub">${escapeHtml(taskScheduleLabel(task))}</div>
         </div>
       `;
+      entry.querySelector('[data-task-action="edit"]').addEventListener("click", () => editTask(task.id));
+      entry.querySelector('[data-task-action="delete"]').addEventListener("click", () => deleteTask(task.id));
       return entry;
     }
 
@@ -2175,25 +2277,26 @@ TEMPLATE = r"""
     }
 
     function periodSection(period, isCustom) {
-      const color = currentCategoryColor(period);
+      const color = escapeHtml(currentCategoryColor(period));
       const visibleTasks = tasksForPeriod(period);
+      const p = escapeHtml(period);
       const deleteBtn = isCustom
-        ? `<button class="secondary legend-color-button" type="button" onclick="removeCustomPeriod('${period}')" title="Delete category" style="background:#e8a0a0;color:#4a1c1c;">x</button>`
+        ? `<button class="secondary legend-color-button" type="button" data-period-action="remove" data-period="${p}" title="Delete category" style="background:#e8a0a0;color:#4a1c1c;">x</button>`
         : "";
-      const helpText = periodHelpText(period);
+      const helpText = escapeHtml(periodHelpText(period));
       return `
         <section class="legend-group">
-          <div class="legend-head" style="background: ${mixColorWithWhite(color, 0.42)};">
-            <span class="legend-head-title">${periodLabel(period)}</span>
+          <div class="legend-head" style="background: ${escapeHtml(mixColorWithWhite(currentCategoryColor(period), 0.42))};">
+            <span class="legend-head-title">${escapeHtml(periodLabel(period))}</span>
             <span class="legend-head-actions">
-              <button class="secondary legend-color-button" type="button" onclick="toggleHelpTooltip(event, '${period}')" title="${helpText}" style="background:var(--card);color:var(--muted);font-size:10px;font-weight:900;">?</button>
-              <button class="secondary legend-color-button" type="button" onclick="openCategoryColorPicker('${period}')" title="Change color" style="background:${color};">✎</button>
-              <input id="categoryColor-${period}" class="legend-color-input" type="color" value="${color}" onchange="updateCategoryColor('${period}', this.value)">
-              <button class="secondary legend-color-button" type="button" onclick="addTaskForPeriod('${period}')" title="Add task" style="background:${color};">+</button>
+              <button class="secondary legend-color-button" type="button" data-period-action="help" data-period="${p}" title="${helpText}" style="background:var(--card);color:var(--muted);font-size:10px;font-weight:900;">?</button>
+              <button class="secondary legend-color-button" type="button" data-period-action="color" data-period="${p}" title="Change color" style="background:${color};">✎</button>
+              <input id="categoryColor-${p}" class="legend-color-input" type="color" value="${color}" data-period-action="color-change" data-period="${p}">
+              <button class="secondary legend-color-button" type="button" data-period-action="add-task" data-period="${p}" title="Add task" style="background:${color};">+</button>
               ${deleteBtn}
             </span>
           </div>
-          <div class="legend-list" data-period-list="${period}">
+          <div class="legend-list" data-period-list="${p}">
           </div>
         </section>
       `;
@@ -2206,8 +2309,23 @@ TEMPLATE = r"""
       const addBtn = '<button class="secondary" type="button" onclick="addCustomPeriod()" style="width:100%;padding:6px;font-size:11px;border-radius:4px;margin-top:4px;">+ Add Every N Days Category</button>';
       list.innerHTML = builtIn + custom + addBtn;
 
+      list.querySelectorAll("[data-period-action]").forEach(el => {
+        const period = el.dataset.period;
+        const action = el.dataset.periodAction;
+        if (action === "color-change") {
+          el.addEventListener("change", () => updateCategoryColor(period, el.value));
+          return;
+        }
+        el.addEventListener("click", event => {
+          if (action === "help") toggleHelpTooltip(event, period);
+          else if (action === "color") openCategoryColorPicker(period);
+          else if (action === "add-task") addTaskForPeriod(period);
+          else if (action === "remove") removeCustomPeriod(period);
+        });
+      });
+
       allPeriods().forEach(period => {
-        const target = list.querySelector(`[data-period-list="${period}"]`);
+        const target = list.querySelector(`[data-period-list="${CSS.escape(period)}"]`);
         if (!target) return;
         tasksForPeriod(period).forEach(task => {
           target.appendChild(legendItem(task));
@@ -2231,10 +2349,13 @@ TEMPLATE = r"""
     function renderPeriodSwitcher() {
       const switcher = document.getElementById("periodSwitcher");
       switcher.innerHTML = ["all", ...allPeriods()].map(period => `
-        <button class="period-pill ${period === activePeriod ? "active" : ""}" onclick="setActivePeriod('${period}')">
-          ${periodLabel(period)}
+        <button class="period-pill ${period === activePeriod ? "active" : ""}" data-period="${escapeHtml(period)}">
+          ${escapeHtml(periodLabel(period))}
         </button>
       `).join("");
+      switcher.querySelectorAll("[data-period]").forEach(btn => {
+        btn.addEventListener("click", () => setActivePeriod(btn.dataset.period));
+      });
     }
 
     function removeCustomPlacement(taskId, dateNumber) {
@@ -2761,7 +2882,7 @@ TEMPLATE = r"""
             return;
           }
           if (!confirm("This will replace your current calendar data. Continue?")) return;
-          state = parsed;
+          state = normalizeState(parsed);
           saveToLocalStorage(state);
           closeBackupModal();
           render();
