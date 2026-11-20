@@ -1,7 +1,8 @@
-import multiprocessing
+import os
 
 bind = "0.0.0.0:8000"
-workers = multiprocessing.cpu_count() * 2 + 1
+# cpu_count() reports host cores inside containers; use the CPUs this process may run on.
+workers = int(os.environ.get("WEB_CONCURRENCY", len(os.sched_getaffinity(0)) * 2 + 1))
 worker_class = "gthread"
 threads = 2
 timeout = 30
